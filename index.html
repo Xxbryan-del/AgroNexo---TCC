@@ -1,0 +1,531 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AgroFamília - Sistema de Gestão e Comercialização</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box;font-family:'Segoe UI',system-ui,sans-serif}
+:root{--g1:#27AE60;--g2:#1E8449;--gl:#E8F8F0;--o1:#D35400;--y1:#F39C12;--d:#2C3E50;--l:#7F8C8D;--bg:#F5F6FA;--bd:#E0E0E0;--sh:0 2px 8px rgba(0,0,0,.08)}
+body{background:var(--bg);color:var(--d)}
+.hidden{display:none!important}
+
+/* ===== AUTENTICAÇÃO ===== */
+.auth-wrap{min-height:100vh;display:flex;align-items:center;justify-content:center;padding:20px}
+.login-card{background:#fff;border-radius:12px;box-shadow:0 4px 16px rgba(0,0,0,.12);width:100%;max-width:460px;overflow:hidden}
+.login-h{background:var(--g2);padding:26px;text-align:center}
+.login-h .logo{font-size:38px}
+.login-h h1{color:#fff;font-size:1.25rem;margin-top:6px}
+.login-h p{color:rgba(255,255,255,.7);font-size:.8rem;margin-top:4px}
+.login-b{padding:26px}
+.tabs{display:flex;gap:8px;margin-bottom:18px}
+.tabs button{flex:1;padding:10px;border:none;border-radius:8px;font-weight:600;cursor:pointer;background:#F0F0F0;color:var(--l);font-size:.9rem}
+.tabs button.at{background:var(--g2);color:#fff}
+.field{margin-bottom:13px}
+.field label{display:block;font-size:.82rem;font-weight:600;margin-bottom:5px}
+.field input,.field select{width:100%;padding:11px;border:1px solid var(--bd);border-radius:8px;font-size:.9rem;outline:none;background:#fff}
+.field input:focus{border-color:var(--g1)}
+.senha-wrap{position:relative}
+.senha-wrap input{padding-right:42px}
+.olho{position:absolute;right:12px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;font-size:1rem}
+.linha{display:flex;justify-content:space-between;align-items:center;font-size:.8rem;margin:2px 0 4px}
+.linha label{display:flex;align-items:center;gap:6px;color:var(--l);cursor:pointer}
+.linha a{color:var(--g2);text-decoration:none;font-weight:600}
+.btn{width:100%;padding:12px;border:none;border-radius:8px;font-size:.93rem;font-weight:600;cursor:pointer;background:var(--g1);color:#fff;margin-top:6px}
+.btn:hover{opacity:.9}
+.btn:disabled{opacity:.5;cursor:wait}
+.btn-out{background:#fff;border:2px solid var(--bd);color:var(--d)}
+.btn-voltar{background:#F0F0F0;color:var(--l);flex:1}
+.btn-avancar{flex:2;margin-top:0}
+.divisor{display:flex;align-items:center;gap:10px;margin:14px 0;color:var(--l);font-size:.75rem}
+.divisor::before,.divisor::after{content:'';flex:1;height:1px;background:var(--bd)}
+.erro{background:#FADBD8;color:#C0392B;padding:8px 12px;border-radius:8px;font-size:.8rem;margin-bottom:12px;display:none}
+.ok{background:var(--gl);color:var(--g2);padding:8px 12px;border-radius:8px;font-size:.8rem;margin-bottom:12px;display:none}
+.bemvindo{text-align:center;margin-top:14px;font-size:.78rem;color:var(--l)}
+.steps{display:flex;justify-content:space-between;margin-bottom:18px;position:relative}
+.steps::before{content:'';position:absolute;top:14px;left:10%;right:10%;height:2px;background:var(--bd);z-index:0}
+.step{display:flex;flex-direction:column;align-items:center;gap:4px;position:relative;z-index:1;flex:1}
+.step .bola{width:28px;height:28px;border-radius:50%;background:#F0F0F0;color:var(--l);display:flex;align-items:center;justify-content:center;font-size:.78rem;font-weight:700;border:2px solid var(--bd)}
+.step span{font-size:.66rem;color:var(--l);font-weight:600}
+.step.on .bola{background:var(--g1);border-color:var(--g1);color:#fff}
+.step.on span{color:var(--g2)}
+.perfis{display:flex;flex-direction:column;gap:10px}
+.pcard{display:flex;align-items:center;gap:12px;padding:14px;border:2px solid var(--bd);border-radius:10px;cursor:pointer;transition:.15s}
+.pcard:hover{border-color:var(--g1)}
+.pcard.sel{border-color:var(--g1);background:var(--gl)}
+.pcard .em{font-size:1.6rem}
+.pcard strong{font-size:.92rem;display:block}
+.pcard small{color:var(--l);font-size:.75rem}
+.linha2{display:flex;gap:10px}
+.linha2 .field{flex:1;min-width:0}
+.ind-senha{font-size:.75rem;margin-top:-8px;margin-bottom:10px;display:block}
+.ind-senha.ok{color:var(--g2)}
+.ind-senha.falta{color:var(--o1)}
+/* Correção do CNPJ cortado */
+#c-cnpj,#c-cep{font-size:.84rem;padding-left:10px;padding-right:10px}
+
+/* ===== DASHBOARD ===== */
+.app{display:flex;min-height:100vh}
+.sb{width:230px;background:var(--g2);color:#fff;position:fixed;height:100vh;display:flex;flex-direction:column}
+.sb-h{padding:20px;display:flex;align-items:center;gap:10px;border-bottom:1px solid rgba(255,255,255,.1)}
+.sb-h .logo{font-size:28px}.sb-h strong{font-size:1.1rem}
+.sb-user{padding:12px 20px;font-size:.78rem;opacity:.8;border-bottom:1px solid rgba(255,255,255,.1)}
+.sb-n{flex:1;padding:10px 0}
+.ni{display:flex;align-items:center;gap:12px;padding:12px 20px;color:rgba(255,255,255,.85);font-size:.92rem;cursor:pointer;border:none;background:none;width:100%;text-align:left}
+.ni:hover{background:rgba(255,255,255,.12)}
+.ni.ac{background:#196F3D;border-left:4px solid var(--y1);font-weight:600}
+.sb-f{padding:14px 20px;border-top:1px solid rgba(255,255,255,.1);font-size:.72rem;opacity:.8}
+.mc{flex:1;margin-left:230px;padding:24px;display:flex;flex-direction:column;gap:20px}
+.hd{display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:12px}
+.hd h1{font-size:1.4rem}
+.btn-sair{background:#FADBD8;color:#C0392B;padding:8px 16px;border:none;border-radius:8px;font-size:.82rem;font-weight:600;cursor:pointer}
+.btn-novo{background:var(--g1);color:#fff;padding:10px 18px;border:none;border-radius:8px;font-size:.88rem;font-weight:600;cursor:pointer}
+.stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:16px}
+.stat{background:#fff;border-radius:10px;padding:18px;box-shadow:var(--sh);display:flex;align-items:center;gap:14px}
+.stat .ic{width:46px;height:46px;border-radius:12px;background:var(--gl);display:flex;align-items:center;justify-content:center;font-size:1.3rem}
+.stat h3{font-size:1.3rem}.stat p{font-size:.8rem;color:var(--l)}
+.cd{background:#fff;border-radius:10px;box-shadow:var(--sh);overflow:hidden}
+.ch{padding:16px 20px;border-bottom:1px solid var(--bd);font-weight:700;font-size:1rem}
+table{width:100%;border-collapse:collapse}
+th{padding:10px 18px;text-align:left;font-size:.75rem;color:var(--l);background:var(--bg);text-transform:uppercase}
+td{padding:12px 18px;border-top:1px solid var(--bd);font-size:.88rem}
+.badge{padding:3px 10px;border-radius:14px;font-size:.72rem;font-weight:600}
+.b-g{background:var(--gl);color:var(--g2)}.b-o{background:#FDEBD0;color:var(--o1)}.b-r{background:#FADBD8;color:#C0392B}
+.ao-vivo{display:inline-block;width:8px;height:8px;border-radius:50%;background:var(--g1);margin-right:6px;animation:pulsa 1.5s infinite}
+@keyframes pulsa{50%{opacity:.3}}
+.modal{position:fixed;inset:0;background:rgba(0,0,0,.4);display:flex;align-items:center;justify-content:center;padding:20px;z-index:50}
+.modal-caixa{background:#fff;border-radius:12px;padding:24px;width:100%;max-width:420px}
+.modal-caixa h2{font-size:1.1rem;margin-bottom:16px}
+@media(max-width:768px){.sb{display:none}.mc{margin-left:0}}
+</style>
+</head>
+<body>
+
+<!-- ==================== TELA DE AUTENTICAÇÃO ==================== -->
+<div class="auth-wrap" id="tela-auth">
+<div class="login-card">
+<div class="login-h">
+<div class="logo">🌱</div>
+<h1>AgroNexo</h1>
+<p>Gestão e Comercialização da Agricultura Familiar</p>
+</div>
+<div class="login-b">
+
+<div class="erro" id="erro"></div>
+<div class="ok" id="ok"></div>
+
+<div class="tabs">
+<button class="at" id="tab-login" onclick="aba('login')">Entrar</button>
+<button id="tab-cad" onclick="aba('cad')">Cadastrar</button>
+</div>
+
+<!-- LOGIN -->
+<div id="form-login">
+<div class="field"><label>Email</label><input type="email" id="email" placeholder="seu@email.com"></div>
+<div class="field"><label>Senha</label>
+<div class="senha-wrap">
+<input type="password" id="senha" placeholder="Sua senha">
+<button type="button" class="olho" onclick="toggleSenha('senha',this)">👁️</button>
+</div></div>
+<div class="linha">
+<label><input type="checkbox" id="manter"> Manter conectado</label>
+<a href="#" onclick="esqueciSenha();return false">Esqueceu a senha?</a>
+</div>
+<button class="btn" id="btn-entrar" onclick="fazerLogin()">Entrar</button>
+<div class="divisor">ou</div>
+<button class="btn btn-out" onclick="alert('Login com Google disponível na versão final do sistema')">Entrar com Google</button>
+</div>
+
+<!-- CADASTRO MULTI-ETAPA (4 etapas, como projetado) -->
+<div id="form-cad" class="hidden">
+<div class="steps">
+<div class="step on" id="st1"><div class="bola">1</div><span>Perfil</span></div>
+<div class="step" id="st2"><div class="bola">2</div><span>Empresa</span></div>
+<div class="step" id="st3"><div class="bola">3</div><span>Endereço</span></div>
+<div class="step" id="st4"><div class="bola">4</div><span>Acesso</span></div>
+</div>
+
+<div class="etapa" id="et1">
+<div class="field"><label>Selecione seu perfil</label></div>
+<div class="perfis">
+<div class="pcard sel" onclick="selPerfil(this,'agricultor')"><span class="em">🌾</span><div><strong>Agricultor</strong><small>Produzo e quero vender direto ao comprador</small></div></div>
+<div class="pcard" onclick="selPerfil(this,'comprador')"><span class="em">🛒</span><div><strong>Comprador</strong><small>Compro produtos direto do produtor</small></div></div>
+<div class="pcard" onclick="selPerfil(this,'admin')"><span class="em">⚙️</span><div><strong>Administrador</strong><small>Gerencio a plataforma e valido cadastros</small></div></div>
+</div>
+</div>
+
+<div class="etapa hidden" id="et2">
+<div class="field"><label>Nome completo / Razão social</label><input type="text" id="c-nome" placeholder="Seu nome ou empresa"></div>
+<div class="field"><label>CNPJ</label><input type="text" id="c-cnpj" placeholder="00.000.000/0000-00" maxlength="18" oninput="mascCnpj()"></div>
+<div class="field"><label>Inscrição Estadual</label><input type="text" id="c-ie" placeholder="Número da IE (ou 'Isento')"></div>
+</div>
+
+<div class="etapa hidden" id="et3">
+<div class="field"><label>CEP <small style="color:var(--l)">(preenchimento automático)</small></label><input type="text" id="c-cep" placeholder="00000-000" maxlength="9" oninput="mascCep()" onblur="viaCep()"></div>
+<div class="field"><label>Logradouro</label><input type="text" id="c-log" placeholder="Rua, avenida..." disabled></div>
+<div class="linha2">
+<div class="field"><label>Número</label><input type="text" id="c-num" placeholder="123"></div>
+<div class="field"><label>UF</label><input type="text" id="c-uf" placeholder="PB" maxlength="2" disabled></div>
+</div>
+<div class="field"><label>Cidade</label><input type="text" id="c-cid" placeholder="Sua cidade" disabled></div>
+</div>
+
+<div class="etapa hidden" id="et4">
+<div class="field"><label>Email</label><input type="email" id="c-email" placeholder="seu@email.com"></div>
+<div class="field"><label>Senha (mín. 6 caracteres)</label>
+<div class="senha-wrap">
+<input type="password" id="c-senha" placeholder="Crie uma senha" oninput="forcaSenha()">
+<button type="button" class="olho" onclick="toggleSenha('c-senha',this)">👁️</button>
+</div></div>
+<span class="ind-senha" id="ind-senha"></span>
+<div class="field"><label>Confirmar senha</label><input type="password" id="c-senha2" placeholder="Repita a senha"></div>
+</div>
+
+<div class="linha2" style="margin-top:8px">
+<button class="btn btn-voltar" id="btn-voltar" onclick="etapaAnterior()" style="display:none">← Voltar</button>
+<button class="btn btn-avancar" id="btn-avancar" onclick="proximaEtapa()">Avançar →</button>
+</div>
+</div>
+
+<p class="bemvindo">🌱 ODS 08 - Trabalho Decente e Crescimento Econômico</p>
+</div>
+</div>
+</div>
+
+<!-- ==================== APP (DASHBOARD) ==================== -->
+<div class="app hidden" id="tela-app">
+<aside class="sb">
+<div class="sb-h"><span class="logo">🌱</span><strong>AgroNexo</strong></div>
+<div class="sb-user" id="user-logado">⏳ Carregando...</div>
+<nav class="sb-n">
+<button class="ni ac" onclick="nav(this,'📊 Dashboard')">📊 Dashboard</button>
+<button class="ni" onclick="nav(this,'🌾 Meus Produtos')">🌾 Meus Produtos</button>
+<button class="ni" onclick="nav(this,'📦 Estoque')">📦 Estoque</button>
+<button class="ni" onclick="nav(this,'🛒 Pedidos')">🛒 Pedidos</button>
+<button class="ni" onclick="nav(this,'📈 Relatórios')">📈 Relatórios</button>
+</nav>
+<div class="sb-f">ODS 08 - Trabalho Decente e Crescimento Econômico</div>
+</aside>
+
+<main class="mc">
+<div class="hd">
+<h1 id="titulo">📊 Dashboard <span style="font-size:.75rem;color:var(--l)"><span class="ao-vivo"></span>tempo real</span></h1>
+<div style="display:flex;gap:10px">
+<button class="btn-novo" id="btn-novo" onclick="abrirModal()">+ Cadastrar Produto</button>
+<button class="btn-sair" onclick="fazerSair()">Sair</button>
+</div>
+</div>
+
+<div class="stats">
+<div class="stat"><div class="ic">🌾</div><div><h3 id="st-produtos">-</h3><p>Produtos</p></div></div>
+<div class="stat"><div class="ic">🛒</div><div><h3 id="st-pedidos">-</h3><p>Pedidos</p></div></div>
+<div class="stat"><div class="ic">💰</div><div><h3 id="st-receita">-</h3><p>Receita</p></div></div>
+<div class="stat"><div class="ic">⚠️</div><div><h3 id="st-alertas">-</h3><p>Alertas de estoque</p></div></div>
+</div>
+
+<div class="cd">
+<div class="ch">Produtos (dados do banco, atualizados em tempo real)</div>
+<table>
+<thead><tr><th>Produto</th><th>Preço</th><th>Estoque</th><th>Status</th></tr></thead>
+<tbody id="tabela"><tr><td colspan="4">⏳ Carregando do banco...</td></tr></tbody>
+</table>
+</div>
+</main>
+</div>
+
+<!-- MODAL: CADASTRAR PRODUTO -->
+<div class="modal hidden" id="modal">
+<div class="modal-caixa">
+<h2>🌾 Cadastrar Novo Produto</h2>
+<div class="field"><label>Nome</label><input id="p-nome" placeholder="Ex: Tomate Italiano"></div>
+<div class="field"><label>Emoji</label><input id="p-emoji" value="🍅" maxlength="2"></div>
+<div class="field"><label>Preço (R$)</label><input id="p-preco" type="number" step="0.01" min="0" placeholder="6.50"></div>
+<div class="field"><label>Estoque</label><input id="p-estoque" type="number" min="0" placeholder="50"></div>
+<div class="field"><label>Estoque mínimo (alerta)</label><input id="p-min" type="number" min="0" value="5"></div>
+<div class="field"><label>Unidade</label><select id="p-un"><option>kg</option><option>un</option><option>duzia</option><option>pote</option><option>caixa</option></select></div>
+<button class="btn" id="btn-salvar" onclick="salvarProduto()">Salvar no banco</button>
+<button class="btn" style="background:#F0F0F0;color:var(--l)" onclick="fecharModal()">Cancelar</button>
+</div>
+</div>
+
+
+
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script>
+/* ================================================================
+   SEÇÃO 1 — BANCO DE DADOS (era o db.js — agora embutido aqui)
+================================================================ */
+src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"
+const SUPABASE_URL = 'https://abmglxkfcwlfnyggnkcm.supabase.co'; // sem /rest/v1/
+const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFibWdseGtmY3dsZm55Z2dua2NtIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTIwNDk5NjcsImV4cCI6MjEwNzYyNTk2N30.4gBQsVPqMS2GlIcov-OIohEg4IhTirQjG7LqTU3sz_Y'; // ← ⚠️ cole sua chave aqui (sb_publishable_... ou eyJ...)
+
+let db = null, dbErro = null;
+try {
+  if (typeof supabase === 'undefined' || !supabase.createClient) {
+    dbErro = 'A biblioteca do Supabase não carregou. Verifique sua internet e se o <script> do CDN vem antes deste código.';
+  } else {
+    db = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+  }
+} catch (e) { dbErro = 'Falha ao conectar: ' + e.message; }
+
+function exigirDb() { if (!db) throw new Error(dbErro || 'Banco de dados indisponível.'); }
+
+async function entrar(email, senha) {
+  exigirDb();
+  const { data, error } = await db.auth.signInWithPassword({ email, password: senha });
+  if (error) throw new Error(traduzErro(error.message));
+  const { data: u, error: e2 } = await db.from('usuarios')
+    .select('nome, perfil').eq('id', data.user.id).single();
+  if (e2) throw new Error('Conta autenticada, mas sem registro na tabela usuarios.');
+  return u;
+}
+
+// ✅ NOVA versão da função cadastrar() — Seção 1 do script
+async function cadastrar(nome, perfil, email, senha, extras = {}) {
+  exigirDb();
+  const { data, error } = await db.auth.signUp({
+    email,
+    password: senha,               // ← mantém a correção que já fizemos
+    options: { data: { nome, perfil, ...extras } }  // ← metadados que o trigger lê
+  });
+  if (error) throw new Error(traduzErro(error.message));
+  // NÃO insere mais na tabela usuarios — o trigger do banco faz isso sozinho
+}
+
+async function usuarioAtual() {
+  exigirDb();
+  const { data } = await db.auth.getUser();
+  if (!data.user) return null;
+  const { data: u } = await db.from('usuarios')
+    .select('nome, perfil').eq('id', data.user.id).single();
+  return { id: data.user.id, ...u };
+}
+
+function traduzErro(msg) {
+  if (msg.includes('Invalid login credentials')) return 'Email ou senha incorretos.';
+  if (msg.includes('already registered'))       return 'Este email já está cadastrado.';
+  if (msg.includes('Password should be'))       return 'A senha deve ter no mínimo 6 caracteres.';
+  return msg;
+}
+
+/* ================================================================
+   SEÇÃO 2 — TELA DE AUTENTICAÇÃO (abas, etapas, ViaCEP)
+================================================================ */
+function aba(qual) {
+  document.getElementById('form-login').classList.toggle('hidden', qual !== 'login');
+  document.getElementById('form-cad').classList.toggle('hidden', qual !== 'cad');
+  document.getElementById('tab-login').classList.toggle('at', qual === 'login');
+  document.getElementById('tab-cad').classList.toggle('at', qual === 'cad');
+  limparMsgs();
+}
+function limparMsgs() {
+  document.getElementById('erro').style.display = 'none';
+  document.getElementById('ok').style.display = 'none';
+}
+function mostrarErro(msg) { const e = document.getElementById('erro'); e.textContent = msg; e.style.display = 'block'; }
+function mostrarOk(msg)   { const o = document.getElementById('ok');   o.textContent = msg; o.style.display = 'block'; }
+
+function toggleSenha(id, btn) {
+  const i = document.getElementById(id);
+  i.type = i.type === 'password' ? 'text' : 'password';
+  btn.textContent = i.type === 'password' ? '👁️' : '🙈';
+}
+
+async function fazerLogin() {
+  const email = document.getElementById('email').value.trim();
+  const senha = document.getElementById('senha').value;
+  if (!email || !senha) { mostrarErro('Preencha email e senha'); return; }
+  document.getElementById('btn-entrar').disabled = true;
+  try {
+    await entrar(email, senha);   // valida no banco
+    await abrirApp();             // sem redirect: troca de tela na hora
+  } catch (e) { mostrarErro(e.message); }
+  document.getElementById('btn-entrar').disabled = false;
+}
+
+async function esqueciSenha() {
+  const email = prompt('Informe seu email para receber o link de recuperação:');
+  if (!email) return;
+  try {
+    await db.auth.resetPasswordForEmail(email);
+    mostrarOk('📧 Link de recuperação enviado! Verifique sua caixa de entrada.');
+  } catch (e) { mostrarErro('Não foi possível enviar: ' + e.message); }
+}
+
+let perfilSel = 'agricultor', etapaAtual = 1;
+
+function selPerfil(el, p) {
+  document.querySelectorAll('.pcard').forEach(x => x.classList.remove('sel'));
+  el.classList.add('sel'); perfilSel = p;
+}
+function mascCnpj() {
+  let v = document.getElementById('c-cnpj').value.replace(/\D/g, '').slice(0, 14);
+  v = v.replace(/^(\d{2})(\d)/, '$1.$2').replace(/^(\d{2})\.(\d{3})(\d)/, '$1.$2.$3')
+       .replace(/\.(\d{3})(\d)/, '.$1/$2').replace(/(\d{4})(\d)/, '$1-$2');
+  document.getElementById('c-cnpj').value = v;
+}
+function mascCep() {
+  let v = document.getElementById('c-cep').value.replace(/\D/g, '').slice(0, 8);
+  if (v.length > 5) v = v.replace(/^(\d{5})(\d)/, '$1-$2');
+  document.getElementById('c-cep').value = v;
+}
+async function viaCep() {
+  const cep = document.getElementById('c-cep').value.replace(/\D/g, '');
+  if (cep.length !== 8) return;
+  try {
+    const r = await fetch(`https://viacep.com.br/ws/${cep}/json/`);
+    const d = await r.json();
+    if (d.erro) { mostrarErro('CEP não encontrado'); return; }
+    document.getElementById('c-log').value = d.logradouro || '';
+    document.getElementById('c-cid').value = d.localidade || '';
+    document.getElementById('c-uf').value = d.uf || '';
+    limparMsgs();
+  } catch (e) { mostrarErro('Falha ao consultar o CEP'); }
+}
+function forcaSenha() {
+  const s = document.getElementById('c-senha').value;
+  const ind = document.getElementById('ind-senha');
+  if (!s) { ind.textContent = ''; ind.className = 'ind-senha'; return; }
+  if (s.length >= 6) { ind.textContent = '✅ Senha válida'; ind.className = 'ind-senha ok'; }
+  else { ind.textContent = '⚠️ Falta(m) ' + (6 - s.length) + ' caractere(s)'; ind.className = 'ind-senha falta'; }
+}
+function mostrarEtapa(n) {
+  etapaAtual = n;
+  [1,2,3,4].forEach(i => {
+    document.getElementById('et' + i).classList.toggle('hidden', i !== n);
+    document.getElementById('st' + i).classList.toggle('on', i <= n);
+  });
+  document.getElementById('btn-voltar').style.display = n > 1 ? 'block' : 'none';
+  document.getElementById('btn-avancar').textContent = n === 4 ? '✅ Criar conta' : 'Avançar →';
+}
+function proximaEtapa() {
+  if (etapaAtual === 1) { mostrarEtapa(2); return; }
+  if (etapaAtual === 2) {
+    if (!document.getElementById('c-nome').value.trim()) { mostrarErro('Informe seu nome/razão social'); return; }
+    if (document.getElementById('c-cnpj').value.replace(/\D/g, '').length !== 14) { mostrarErro('CNPJ inválido (14 dígitos)'); return; }
+    mostrarEtapa(3); return;
+  }
+  if (etapaAtual === 3) {
+    if (document.getElementById('c-cep').value.replace(/\D/g, '').length !== 8) { mostrarErro('Informe um CEP válido'); return; }
+    if (!document.getElementById('c-num').value.trim()) { mostrarErro('Informe o número do endereço'); return; }
+    mostrarEtapa(4); return;
+  }
+  if (etapaAtual === 4) criarConta();
+}
+function etapaAnterior() { if (etapaAtual > 1) mostrarEtapa(etapaAtual - 1); }
+
+async function criarConta() {
+  const nome = document.getElementById('c-nome').value.trim();
+  const email = document.getElementById('c-email').value.trim();
+  const senha = document.getElementById('c-senha').value;
+  const senha2 = document.getElementById('c-senha2').value;
+  if (!email.includes('@')) { mostrarErro('Informe um email válido'); return; }
+  if (senha.length < 6) { mostrarErro('A senha deve ter no mínimo 6 caracteres'); return; }
+  if (senha !== senha2) { mostrarErro('As senhas não conferem'); return; }
+  document.getElementById('btn-avancar').disabled = true;
+  try {
+    await cadastrar(nome, perfilSel, email, senha, {
+      cnpj: document.getElementById('c-cnpj').value,
+      inscricao_estadual: document.getElementById('c-ie').value.trim(),
+      cep: document.getElementById('c-cep').value,
+      logradouro: document.getElementById('c-log').value,
+      numero: document.getElementById('c-num').value.trim(),
+      cidade: document.getElementById('c-cid').value,
+      uf: document.getElementById('c-uf').value
+    });
+    limparMsgs();
+    mostrarOk('✅ Conta criada com sucesso! Agora faça login.');
+    aba('login');
+  } catch (e) { mostrarErro(e.message); }
+  document.getElementById('btn-avancar').disabled = false;
+}
+
+/* ================================================================
+   SEÇÃO 3 — DASHBOARD (produtos do banco + tempo real)
+================================================================ */
+let MEU_USUARIO = null;
+
+async function abrirApp() {
+  MEU_USUARIO = await usuarioAtual();
+  document.getElementById('user-logado').textContent = '👤 ' + MEU_USUARIO.nome + ' (' + MEU_USUARIO.perfil + ')';
+  if (MEU_USUARIO.perfil !== 'agricultor') document.getElementById('btn-novo').style.display = 'none';
+  document.getElementById('tela-auth').classList.add('hidden');
+  document.getElementById('tela-app').classList.remove('hidden');
+  await carregarTudo();
+  escutarTempoReal();
+}
+
+async function fazerSair() {
+  exigirDb();
+  await db.auth.signOut();
+  document.getElementById('tela-app').classList.add('hidden');
+  document.getElementById('tela-auth').classList.remove('hidden');
+  document.getElementById('senha').value = '';
+}
+
+async function carregarTudo() {
+  const { data: prods, error } = await db.from('produtos').select('*').order('id');
+  if (error) { console.error(error); return; }
+  const { data: peds } = await db.from('pedidos').select('quantidade, status, produto_id');
+  const precoMap = Object.fromEntries(prods.map(p => [p.id, Number(p.preco)]));
+  const receita = (peds || []).filter(p => p.status !== 'cancelado')
+    .reduce((s, p) => s + p.quantidade * (precoMap[p.produto_id] || 0), 0);
+  const alertas = prods.filter(p => p.estoque <= p.estoque_minimo).length;
+  document.getElementById('st-produtos').textContent = prods.length;
+  document.getElementById('st-pedidos').textContent = (peds || []).length;
+  document.getElementById('st-receita').textContent = 'R$ ' + receita.toFixed(2).replace('.', ',');
+  document.getElementById('st-alertas').textContent = alertas;
+  document.getElementById('tabela').innerHTML = prods.map(p => {
+    const st = p.estoque == 0 ? ['b-o', 'Esgotado'] : p.estoque <= p.estoque_minimo ? ['b-r', 'Estoque baixo'] : ['b-g', 'Em estoque'];
+    return `<tr><td>${p.emoji} ${p.nome}</td><td>R$ ${Number(p.preco).toFixed(2).replace('.', ',')}/${p.unidade}</td><td>${p.estoque} ${p.unidade}</td><td><span class="badge ${st[0]}">${st[1]}</span></td></tr>`;
+  }).join('') || '<tr><td colspan="4">Nenhum produto cadastrado ainda.</td></tr>';
+}
+
+function escutarTempoReal() {
+  db.channel('produtos-rt')
+    .on('postgres_changes', { event: '*', schema: 'public', table: 'produtos' }, carregarTudo)
+    .on('postgres_changes', { event: '*', schema: 'public', table: 'pedidos' }, carregarTudo)
+    .subscribe();
+}
+
+async function salvarProduto() {
+  const nome = document.getElementById('p-nome').value.trim();
+  const preco = parseFloat(document.getElementById('p-preco').value);
+  const estoque = parseInt(document.getElementById('p-estoque').value);
+  if (!nome || isNaN(preco) || isNaN(estoque)) { alert('Preencha nome, preço e estoque'); return; }
+  document.getElementById('btn-salvar').disabled = true;
+  const { error } = await db.from('produtos').insert({
+    agricultor_id: MEU_USUARIO.id, nome,
+    emoji: document.getElementById('p-emoji').value || '🌾',
+    preco, estoque,
+    estoque_minimo: parseInt(document.getElementById('p-min').value) || 5,
+    unidade: document.getElementById('p-un').value
+  });
+  document.getElementById('btn-salvar').disabled = false;
+  if (error) { alert('Erro: ' + error.message); return; }
+  fecharModal(); // o tempo real atualiza sozinho
+}
+function abrirModal()  { document.getElementById('modal').classList.remove('hidden'); }
+function fecharModal() { document.getElementById('modal').classList.add('hidden'); }
+
+function nav(el, titulo) {
+  document.querySelectorAll('.ni').forEach(x => x.classList.remove('ac'));
+  el.classList.add('ac');
+  document.getElementById('titulo').innerHTML = titulo;
+}
+
+/* ================================================================
+   SEÇÃO 4 — INICIALIZAÇÃO (roda por último)
+================================================================ */
+(async function init() {
+  if (!db) { mostrarErro(dbErro || 'Banco indisponível.'); return; } // erro visível na tela, não críptico
+  const { data } = await db.auth.getSession();
+  if (data.session) await abrirApp(); // já está logado → entra direto no dashboard
+})();
+
+
+
+</script>
+</body>
+</html>
