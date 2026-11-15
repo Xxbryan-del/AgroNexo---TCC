@@ -20,7 +20,8 @@ ODS 08 (Trabalho Decente e Crescimento Econômico). Projeto de TCC — CEUNI FAM
 | Dashboard (vendas, previsão de estoque, atividade) | pronta |
 | Meus Produtos (editar, arquivar, excluir) | pronta |
 | Estoque (entradas, saídas e perdas com motivo, CSV) | pronta |
-| Pedidos, Relatórios, Marketplace | em construção |
+| Marketplace (vitrine, carrinho, entrega e distância) e Meus Pedidos do comprador | pronta |
+| Pedidos do agricultor (rotas e rastreabilidade), Relatórios | em construção |
 
 ## Banco de dados
 
@@ -30,6 +31,7 @@ nesta ordem (cada um pode ser rodado mais de uma vez):
 1. `01-seguranca.sql` — permissões (RLS), regras de pedido e baixa de estoque
 2. `02-historico-dashboard.sql` — histórico de estoque e vendas por dia
 3. `03-estoque.sql` — movimentações de estoque com motivo
+4. `04-marketplace.sql` — pedido com entrega, localização e código de rastreio
 
 ## Publicação
 

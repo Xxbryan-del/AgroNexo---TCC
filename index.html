@@ -211,6 +211,48 @@ td small{display:block;color:var(--l);font-size:.75rem}
 .btn-mov{width:auto;padding:12px 24px}
 .btn-csv{min-height:42px;padding:8px 14px}
 .quando{white-space:nowrap;font-variant-numeric:tabular-nums}
+
+/* ===== MARKETPLACE E MEUS PEDIDOS ===== */
+.field textarea{width:100%;padding:11px;border:1px solid var(--bdi);border-radius:8px;font:inherit;font-size:.9rem;background:var(--card);color:var(--d);resize:vertical}
+.btn-novo:disabled{opacity:.55;cursor:not-allowed}
+.loja{display:grid;grid-template-columns:minmax(0,1fr) 360px;gap:20px;align-items:start}
+.vitrine{display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:16px}
+.contagem-loja{font-size:.85rem;color:var(--l);margin-bottom:10px}
+.produto-card{background:var(--card);border-radius:10px;box-shadow:var(--sh);padding:16px;display:flex;flex-direction:column;gap:4px}
+.pc-topo{display:flex;gap:10px;align-items:flex-start}
+.pc-emoji{font-size:2rem;line-height:1}
+.produto-card h3{font-size:1rem}
+.pc-produtor{font-size:.8rem;color:var(--l)}
+.pc-preco{font-size:1.25rem;font-weight:700;margin-top:6px}
+.pc-preco small{font-size:.8rem;font-weight:400;color:var(--l)}
+.pc-estoque{font-size:.82rem;color:var(--l)}
+.pc-no-carrinho{font-size:.82rem;color:var(--verde-tx);font-weight:600}
+.pc-acao{display:flex;gap:8px;margin-top:auto;padding-top:10px;align-items:center}
+.pc-acao input,.ic-linha input{width:72px;padding:9px;border:1px solid var(--bdi);border-radius:8px;font-size:.9rem;background:var(--card);color:var(--d)}
+.pc-acao .btn-novo{flex:1}
+.carrinho{position:sticky;top:16px;max-height:calc(100vh - 32px);overflow-y:auto} /* o botão Finalizar nunca fica fora da tela */
+.carrinho .cd-h h2:focus{outline:none}
+.itens-carrinho{list-style:none}
+.itens-carrinho li{padding:10px 20px;border-top:1px solid var(--bd);font-size:.88rem;display:flex;flex-direction:column;gap:6px}
+.itens-carrinho li.grupo-produtor{background:var(--bg);font-weight:700;font-size:.78rem;color:var(--l);padding:8px 20px}
+.ic-linha{display:flex;align-items:center;gap:8px;justify-content:space-between}
+.alerta-txt{color:var(--erro-tx);font-weight:600}
+.form-entrega{padding:14px 20px 20px;border-top:1px solid var(--bd)}
+.form-entrega h3{font-size:.95rem;margin-bottom:10px}
+.localizacao{margin:2px 0 14px}
+.lembrar{display:flex;gap:6px;align-items:center;font-size:.8rem;color:var(--l);margin-top:8px;cursor:pointer}
+.localizacao .obs{margin-top:6px;font-size:.78rem}
+html.hc .produto-card,html.hc .compra{border:2px solid #fff}
+.lista-compras{display:flex;flex-direction:column;gap:16px}
+.itens-compra{list-style:none}
+.itens-compra > li{display:flex;flex-wrap:wrap;gap:8px 14px;align-items:center;justify-content:space-between;padding:12px 20px;border-top:1px solid var(--bd);font-size:.88rem}
+.itens-compra > li:first-child{border-top:none}
+.itens-compra small{display:block;color:var(--l);font-size:.78rem}
+.etapas{display:flex;flex-wrap:wrap;gap:4px 16px;list-style:none;font-size:.78rem;color:var(--l);width:100%}
+.etapas li::before{content:"○ ";}
+.etapas li.feita{color:var(--verde-tx);font-weight:600}
+.etapas li.feita::before{content:"● ";}
+@media(max-width:1100px){.loja{grid-template-columns:minmax(0,1fr)}.carrinho{position:static}}
 .barra-produtos select{width:100%;padding:11px;border:1px solid var(--bdi);border-radius:8px;font-size:.9rem;background:var(--card);color:var(--d)}
 
 /* ===== BARRA DE ACESSIBILIDADE ===== */
@@ -502,6 +544,52 @@ html.hc .acess button[aria-pressed="true"]{background:#FFD400;color:#000}
 </div>
 </section>
 
+<!-- ===== TELA: MARKETPLACE (comprador) ===== -->
+<section class="tela hidden" id="tela-marketplace" aria-labelledby="titulo">
+<div class="barra-produtos">
+<div class="field"><label for="busca-loja">Buscar produto ou produtor</label><input type="search" id="busca-loja" placeholder="Ex.: queijo" autocomplete="off" oninput="renderLoja()"></div>
+<div class="field"><label for="cidade-loja">Cidade</label><select id="cidade-loja" onchange="renderLoja()"><option value="">Todas</option></select></div>
+<div class="field"><label for="ordem-loja">Ordenar por</label><select id="ordem-loja" onchange="renderLoja()"><option value="nome">Nome</option><option value="preco">Menor preço</option><option value="distancia">Mais perto</option></select></div>
+</div>
+<div class="ok" id="msg-loja" role="status"></div>
+<div class="loja">
+<div>
+<p class="contagem-loja" id="contagem-loja" aria-live="polite"></p>
+<div class="vitrine" id="vitrine"></div>
+</div>
+<aside class="cd carrinho" aria-labelledby="tit-carrinho">
+<div class="cd-h"><h2 id="tit-carrinho" tabindex="-1">Carrinho</h2><p id="sub-carrinho">Vazio: adicione produtos da vitrine</p></div>
+<ul class="itens-carrinho" id="itens-carrinho"></ul>
+<form class="form-entrega" id="form-entrega" onsubmit="finalizarPedido(event)" novalidate>
+<h3>Entrega</h3>
+<div class="erro" id="erro-carrinho" role="alert"></div>
+<div class="linha2">
+<div class="field"><label for="e-cep">CEP</label><input id="e-cep" inputmode="numeric" maxlength="9" autocomplete="postal-code"></div>
+<div class="field"><label for="e-uf">UF</label><input id="e-uf" maxlength="2" autocomplete="address-level1"></div>
+</div>
+<div class="field"><label for="e-log">Endereço</label><input id="e-log" autocomplete="address-line1" placeholder="Rua, sítio, comunidade..."></div>
+<div class="linha2">
+<div class="field"><label for="e-num">Número</label><input id="e-num" placeholder="123 ou S/N"></div>
+<div class="field"><label for="e-cid">Cidade</label><input id="e-cid" autocomplete="address-level2"></div>
+</div>
+<div class="field"><label for="e-obs">Observação <span class="dica">Ex.: entregar até as 10h</span></label><textarea id="e-obs" maxlength="300" rows="2"></textarea></div>
+<div class="localizacao">
+<button type="button" class="acao" id="bt-local" onclick="usarMinhaLocalizacao()"><span aria-hidden="true">📍</span> Usar minha localização</button>
+<label class="lembrar"><input type="checkbox" id="e-lembrar" checked> Lembrar para mostrar a distância dos produtores</label>
+<p class="obs" id="status-local" aria-live="polite">Opcional: ajuda o produtor a planejar a rota de entrega.</p>
+</div>
+<button type="submit" class="btn" id="btn-finalizar" disabled>Finalizar pedido</button>
+</form>
+</aside>
+</div>
+</section>
+
+<!-- ===== TELA: MEUS PEDIDOS (comprador) ===== -->
+<section class="tela hidden" id="tela-meus-pedidos" aria-labelledby="titulo">
+<div class="ok" id="msg-meus-pedidos" role="status" tabindex="-1"></div>
+<div class="lista-compras" id="lista-compras"></div>
+</section>
+
 <!-- ===== TELAS AINDA NÃO CONSTRUÍDAS ===== -->
 <section class="tela hidden" id="tela-em-breve" aria-labelledby="titulo">
 <div class="em-breve"><strong id="em-breve-titulo">Em construção</strong>Esta tela entra na próxima etapa do cronograma.</div>
@@ -612,6 +700,8 @@ function traduzErro(msg) {
   if (/ativo/.test(msg) && /column/i.test(msg))  return 'Para arquivar produtos, rode o script 02-historico-dashboard.sql no Supabase.';
   if (msg.includes('foreign key'))               return 'Este produto já tem pedidos e não pode ser apagado. Use "Arquivar".';
   if (/ajustar_estoque/.test(msg))               return 'Para registrar movimentações, rode o script 03-estoque.sql no Supabase.';
+  if (/(grupo|entrega_|observacao|definir_minha_localizacao)/.test(msg) && /(column|function|schema cache)/i.test(msg))
+                                                 return 'Para fazer pedidos, rode o script 04-marketplace.sql no Supabase.';
   return msg;
 }
 
@@ -848,8 +938,8 @@ const MENUS = {
   ],
   comprador: [
     { id: 'dashboard',   ic: '📊', nome: 'Dashboard' },
-    { id: 'marketplace', ic: '🧺', nome: 'Marketplace' },
-    { id: 'pedidos',     ic: '🛒', nome: 'Meus Pedidos' }
+    { id: 'marketplace',  ic: '🧺', nome: 'Marketplace' },
+    { id: 'meus-pedidos', ic: '🛒', nome: 'Meus Pedidos' }
   ],
   admin: [
     { id: 'dashboard',  ic: '📊', nome: 'Dashboard' },
@@ -858,7 +948,7 @@ const MENUS = {
     { id: 'relatorios', ic: '📈', nome: 'Relatórios' }
   ]
 };
-const TELAS_PRONTAS = ['dashboard', 'produtos', 'estoque'];
+const TELAS_PRONTAS = ['dashboard', 'produtos', 'estoque', 'marketplace', 'meus-pedidos'];
 let TELA_ATUAL = 'dashboard';
 
 function itensDoMenu() { return MENUS[MEU_USUARIO.perfil] || MENUS.agricultor; }
@@ -889,9 +979,8 @@ function irPara(tela) {
   document.getElementById('titulo').textContent = item.nome;
   TELA_ATUAL = item.id;
   const pronta = TELAS_PRONTAS.includes(item.id);
-  document.getElementById('tela-dashboard').classList.toggle('hidden', item.id !== 'dashboard');
-  document.getElementById('tela-produtos').classList.toggle('hidden', item.id !== 'produtos');
-  document.getElementById('tela-estoque').classList.toggle('hidden', item.id !== 'estoque');
+  // Cada tela pronta é uma <section id="tela-..."> com o mesmo id do menu
+  TELAS_PRONTAS.forEach(id => document.getElementById('tela-' + id).classList.toggle('hidden', item.id !== id));
   document.getElementById('tela-em-breve').classList.toggle('hidden', pronta);
   if (!pronta) document.getElementById('em-breve-titulo').textContent = item.nome + ': em construção';
   if (item.id === 'dashboard' && PAINEL.grafico) PAINEL.grafico.resize(); // canvas estava escondido
@@ -915,6 +1004,7 @@ async function abrirApp() {
   configurarPainel();
   configurarProdutos();
   configurarEstoque();
+  configurarLoja();
   document.getElementById('tela-auth').classList.add('hidden');
   document.getElementById('tela-app').classList.remove('hidden');
   irPara('dashboard');
@@ -931,6 +1021,7 @@ async function fazerSair() {
   MEU_USUARIO = null;
   PRODUTOS = [];
   limparPainel();
+  ['vitrine', 'itens-carrinho', 'lista-compras'].forEach(id => { document.getElementById(id).innerHTML = ''; });
   document.getElementById('tabela').innerHTML = '<tr><td colspan="4">Carregando do banco...</td></tr>';
   document.getElementById('tela-app').classList.add('hidden');
   document.getElementById('tela-auth').classList.remove('hidden');
@@ -942,16 +1033,18 @@ async function fazerSair() {
 // até os dados novos chegarem: nada "pisca" quando o tempo real dispara.
 async function carregarTudo() {
   if (!MEU_USUARIO) return;
-  const secoes = document.querySelectorAll('#tela-dashboard, #tela-produtos, #tela-estoque');
+  const secoes = document.querySelectorAll('.tela');
   secoes.forEach(s => s.classList.add('atualizando'));
   try {
-    const [, dadosPainel, dadosEstoque] = await Promise.all([
+    const [, dadosPainel, dadosEstoque, dadosLoja] = await Promise.all([
       carregarProdutos(),
       buscarDadosPainel(),
-      TELA_ATUAL === 'estoque' ? buscarEstoque() : Promise.resolve(null)
+      TELA_ATUAL === 'estoque' ? buscarEstoque() : Promise.resolve(null),
+      MEU_USUARIO.perfil === 'comprador' ? buscarLoja() : Promise.resolve(null)
     ]);
     if (MEU_USUARIO) renderPainel(dadosPainel);
     if (MEU_USUARIO && dadosEstoque) aplicarEstoque(dadosEstoque);
+    if (MEU_USUARIO && dadosLoja) aplicarLoja(dadosLoja);
   } catch (e) {
     console.error(e);
     document.getElementById('aviso-dash').textContent = 'Não foi possível atualizar o painel agora. Verifique a conexão.';
@@ -1397,6 +1490,383 @@ document.getElementById('filtros-estoque').addEventListener('click', (e) => {
   ESTOQUE.dias = Number(bt.dataset.dias);
   document.querySelectorAll('#filtros-estoque button').forEach(x => x.setAttribute('aria-pressed', x === bt));
   carregarEstoque();
+});
+
+/* ================================================================
+   SEÇÃO 3D — MARKETPLACE E MEUS PEDIDOS (comprador)
+   • Um carrinho com vários produtos vira vários pedidos (um por produto),
+     ligados pelo mesmo "grupo" e enviados num único INSERT: ou entra tudo, ou nada.
+   • O endereço de entrega vai gravado no pedido: só o agricultor daquele pedido o vê.
+   • Distância até o produtor vem pronta do banco (produtores_publicos): as
+     coordenadas de ninguém saem do servidor.
+================================================================ */
+const LOJA = { produtores: new Map(), perfil: null, pedidos: [], carrinho: [], local: null, enderecoPreenchido: false };
+
+function uuid() {
+  if (window.crypto && crypto.randomUUID) return crypto.randomUUID();
+  const b = crypto.getRandomValues(new Uint8Array(16));
+  b[6] = (b[6] & 15) | 64;
+  b[8] = (b[8] & 63) | 128;
+  const h = [...b].map(x => x.toString(16).padStart(2, '0')).join('');
+  return `${h.slice(0, 8)}-${h.slice(8, 12)}-${h.slice(12, 16)}-${h.slice(16, 20)}-${h.slice(20)}`;
+}
+
+// Carrinho guardado só neste navegador, separado por usuário
+function chaveCarrinho() { return 'agronexo-carrinho-' + MEU_USUARIO.id; }
+function lerCarrinho() {
+  try {
+    const c = JSON.parse(localStorage.getItem(chaveCarrinho()) || '[]');
+    return Array.isArray(c) ? c.filter(i => Number.isInteger(i.produto_id) && Number.isInteger(i.qtd) && i.qtd > 0) : [];
+  } catch (e) { return []; }
+}
+function salvarCarrinho() { try { localStorage.setItem(chaveCarrinho(), JSON.stringify(LOJA.carrinho)); } catch (e) {} }
+
+function configurarLoja() {
+  Object.assign(LOJA, { produtores: new Map(), perfil: null, pedidos: [], local: null, enderecoPreenchido: false });
+  LOJA.carrinho = MEU_USUARIO.perfil === 'comprador' ? lerCarrinho() : [];
+  document.getElementById('busca-loja').value = '';
+  document.getElementById('ordem-loja').value = 'nome';
+  ['msg-loja', 'erro-carrinho', 'msg-meus-pedidos'].forEach(id => { document.getElementById(id).textContent = ''; });
+  document.getElementById('form-entrega').reset();
+  document.getElementById('status-local').textContent = 'Opcional: ajuda o produtor a planejar a rota de entrega.';
+}
+
+async function buscarLoja() {
+  const [produtores, perfil, pedidos] = await Promise.all([
+    db.rpc('produtores_publicos'),
+    db.from('usuarios').select('*').eq('id', MEU_USUARIO.id).single(),
+    db.from('pedidos').select('*, produtos(nome, unidade, emoji, agricultor_id)')
+      .order('criado_em', { ascending: false }).limit(200)
+  ]);
+  return { produtores, perfil, pedidos };
+}
+
+function aplicarLoja(res) {
+  LOJA.produtores = new Map(((res.produtores && res.produtores.data) || []).map(p => [p.id, p]));
+  LOJA.perfil = (res.perfil && res.perfil.data) || null;
+  LOJA.pedidos = (res.pedidos && res.pedidos.data) || [];
+  if (!LOJA.enderecoPreenchido && LOJA.perfil) preencherEndereco(LOJA.perfil);
+  renderLoja();
+  renderCarrinho();
+  renderMeusPedidos();
+}
+
+// O endereço do cadastro vem sugerido; a pessoa pode trocar só para esta entrega
+function preencherEndereco(u) {
+  const campos = { 'e-cep': u.cep, 'e-log': u.logradouro, 'e-num': u.numero, 'e-cid': u.cidade, 'e-uf': u.uf };
+  Object.entries(campos).forEach(([id, valor]) => {
+    const el = document.getElementById(id);
+    if (!el.value && valor) el.value = valor;
+  });
+  LOJA.enderecoPreenchido = true;
+}
+
+function produtorDe(p) { return LOJA.produtores.get(p.agricultor_id) || null; }
+function cidadeDe(pr) { return pr && pr.cidade ? pr.cidade + (pr.uf ? '/' + pr.uf : '') : ''; }
+function textoProdutor(pr) {
+  if (!pr) return 'Produtor';
+  return pr.nome + (pr.cidade ? ' · ' + cidadeDe(pr) : '')
+       + (pr.distancia_km != null ? ` · a ${numero(pr.distancia_km, 1)} km` : '');
+}
+function noCarrinho(id) { const i = LOJA.carrinho.find(x => x.produto_id === id); return i ? i.qtd : 0; }
+
+function renderLoja() {
+  if (!MEU_USUARIO || MEU_USUARIO.perfil !== 'comprador') return;
+  const disponiveis = PRODUTOS.filter(p => p.ativo !== false && p.estoque > 0);
+
+  const selCidade = document.getElementById('cidade-loja');
+  const cidadeAntes = selCidade.value;
+  const cidades = [...new Set(disponiveis.map(p => cidadeDe(produtorDe(p))).filter(Boolean))]
+    .sort((a, b) => a.localeCompare(b, 'pt-BR'));
+  selCidade.innerHTML = '';
+  selCidade.add(new Option('Todas', ''));
+  cidades.forEach(c => selCidade.add(new Option(c, c)));
+  if (cidades.includes(cidadeAntes)) selCidade.value = cidadeAntes;
+
+  const termo = semAcento(document.getElementById('busca-loja').value.trim());
+  const cidade = selCidade.value;
+  const ordem = document.getElementById('ordem-loja').value;
+  const distancia = p => { const pr = produtorDe(p); return pr && pr.distancia_km != null ? Number(pr.distancia_km) : Infinity; };
+  const lista = disponiveis.filter(p => {
+    const pr = produtorDe(p);
+    if (termo && !semAcento(p.nome + ' ' + (pr ? pr.nome : '')).includes(termo)) return false;
+    return !cidade || cidadeDe(pr) === cidade;
+  }).sort(ordem === 'preco'     ? (a, b) => a.preco - b.preco
+        : ordem === 'distancia' ? (a, b) => (distancia(a) - distancia(b)) || a.nome.localeCompare(b.nome, 'pt-BR')
+        :                         (a, b) => a.nome.localeCompare(b.nome, 'pt-BR'));
+
+  const semDistancia = ordem === 'distancia' && !lista.some(p => isFinite(distancia(p)));
+  document.getElementById('contagem-loja').textContent =
+    `${lista.length} produto${lista.length === 1 ? '' : 's'} disponíve${lista.length === 1 ? 'l' : 'is'}`
+    + (semDistancia ? ' · para ordenar por distância, use "Usar minha localização" no carrinho' : '');
+
+  const vitrine = document.getElementById('vitrine');
+  if (!lista.length) {
+    vitrine.innerHTML = `<p class="vazio">${disponiveis.length ? 'Nenhum produto encontrado com esses filtros.' : 'Nenhum produto à venda no momento.'}</p>`;
+    return;
+  }
+  vitrine.innerHTML = lista.map(p => {
+    const u = esc(p.unidade), qtd = noCarrinho(p.id), resta = p.estoque - qtd;
+    return `<article class="produto-card" aria-labelledby="pc-${p.id}">`
+      + `<div class="pc-topo"><span class="pc-emoji" aria-hidden="true">${esc(p.emoji)}</span>`
+      + `<div><h3 id="pc-${p.id}">${esc(p.nome)}</h3><p class="pc-produtor">${esc(textoProdutor(produtorDe(p)))}</p></div></div>`
+      + `<p class="pc-preco">${moeda(p.preco)} <small>/${u}</small></p>`
+      + `<p class="pc-estoque">Disponível: ${numero(p.estoque)} ${u}</p>`
+      + (qtd ? `<p class="pc-no-carrinho">No carrinho: ${numero(qtd)} ${u}</p>` : '')
+      + `<div class="pc-acao"><label class="sr" for="q-${p.id}">Quantidade de ${esc(p.nome)} em ${u}</label>`
+      + `<input type="number" id="q-${p.id}" min="1" max="${resta}" step="1" value="${resta > 0 ? 1 : 0}" inputmode="numeric"${resta > 0 ? '' : ' disabled'}>`
+      + `<button type="button" class="btn-novo" data-adicionar="${p.id}"${resta > 0 ? '' : ' disabled'}>${resta > 0 ? 'Adicionar' : 'Tudo no carrinho'}</button></div>`
+      + `</article>`;
+  }).join('');
+}
+
+function mensagemLoja(texto, tipo = 'ok') {
+  const el = document.getElementById('msg-loja');
+  el.className = tipo;
+  el.textContent = texto;
+}
+
+function adicionarAoCarrinho(id) {
+  const p = PRODUTOS.find(x => x.id === id);
+  if (!p) return;
+  const campo = document.getElementById('q-' + id);
+  const q = Number(campo.value);
+  const ja = noCarrinho(id);
+  if (!Number.isInteger(q) || q < 1) { mensagemLoja('Informe uma quantidade inteira, 1 ou mais.', 'erro'); campo.focus(); return; }
+  if (ja + q > p.estoque) {
+    mensagemLoja(`Só há ${numero(p.estoque)} ${p.unidade} de ${p.nome}` + (ja ? ` (você já tem ${numero(ja)} no carrinho).` : '.'), 'erro');
+    campo.focus();
+    return;
+  }
+  const item = LOJA.carrinho.find(x => x.produto_id === id);
+  if (item) item.qtd += q; else LOJA.carrinho.push({ produto_id: id, qtd: q });
+  salvarCarrinho();
+  mensagemLoja(`${p.nome}: ${numero(ja + q)} ${p.unidade} no carrinho.`);
+  renderLoja();
+  renderCarrinho();
+  // A vitrine foi redesenhada: devolve o foco para o mesmo produto (ou para o carrinho)
+  const bt = document.querySelector(`button[data-adicionar="${id}"]`);
+  (bt && !bt.disabled ? bt : document.getElementById('tit-carrinho')).focus();
+}
+
+function itensDoCarrinho() {
+  return LOJA.carrinho.map(i => {
+    const p = PRODUTOS.find(x => x.id === i.produto_id);
+    const disponivel = p && p.ativo !== false ? p.estoque : 0;
+    return { ...i, p, disponivel, ok: !!p && disponivel >= i.qtd };
+  });
+}
+
+function renderCarrinho() {
+  const itens = itensDoCarrinho();
+  const validos = itens.filter(i => i.ok);
+  const total = validos.reduce((s, i) => s + i.qtd * Number(i.p.preco), 0);
+  const plural = n => `${n} ite${n === 1 ? 'm' : 'ns'}`;
+  document.getElementById('sub-carrinho').textContent = itens.length
+    ? `${plural(itens.length)} · ${moeda(total)}` : 'Vazio: adicione produtos da vitrine';
+  const bt = document.getElementById('btn-finalizar');
+  bt.disabled = !itens.length || validos.length !== itens.length;
+  bt.textContent = validos.length ? `Finalizar pedido · ${moeda(total)}` : 'Finalizar pedido';
+
+  // Itens agrupados por produtor (cada um entrega a sua parte)
+  const grupos = new Map();
+  itens.forEach(i => {
+    const chave = i.p ? i.p.agricultor_id : 'indisponivel';
+    if (!grupos.has(chave)) grupos.set(chave, []);
+    grupos.get(chave).push(i);
+  });
+  let html = '';
+  grupos.forEach((doProdutor, chave) => {
+    const pr = LOJA.produtores.get(chave);
+    html += `<li class="grupo-produtor">${esc(chave === 'indisponivel' ? 'Indisponível' : textoProdutor(pr))}</li>`;
+    doProdutor.forEach(i => {
+      const nome = i.p ? esc(i.p.nome) : 'Produto removido';
+      const u = i.p ? esc(i.p.unidade) : '';
+      html += `<li><div class="ic-linha"><span><span aria-hidden="true">${i.p ? esc(i.p.emoji) : '❔'}</span> ${nome}</span>`
+        + `<span class="num">${i.p ? moeda(i.qtd * Number(i.p.preco)) : '—'}</span></div>`
+        + `<div class="ic-linha">`
+        + (i.p ? `<span><label class="sr" for="cq-${i.produto_id}">Quantidade de ${nome}</label>`
+               + `<input type="number" id="cq-${i.produto_id}" data-qtd="${i.produto_id}" min="1" max="${i.disponivel}" step="1" value="${i.qtd}" inputmode="numeric"> ${u} × ${moeda(i.p.preco)}</span>`
+             : '<span></span>')
+        + `<button type="button" class="acao perigo" data-remover="${i.produto_id}" aria-label="Remover ${nome} do carrinho">Remover</button></div>`
+        + (i.ok ? '' : `<p class="obs alerta-txt">${i.p && i.disponivel > 0
+              ? `Só há ${numero(i.disponivel)} ${u} disponíveis: ajuste a quantidade.`
+              : 'Não está mais à venda: remova do carrinho.'}</p>`)
+        + `</li>`;
+    });
+  });
+  document.getElementById('itens-carrinho').innerHTML = html;
+}
+
+function usarMinhaLocalizacao() {
+  const st = document.getElementById('status-local');
+  if (!('geolocation' in navigator)) { st.textContent = 'Este navegador não informa a localização.'; return; }
+  st.textContent = 'Pedindo a localização ao navegador…';
+  navigator.geolocation.getCurrentPosition(async (pos) => {
+    LOJA.local = { lat: pos.coords.latitude, lng: pos.coords.longitude };
+    st.textContent = `Localização registrada para esta entrega (precisão de ~${numero(pos.coords.accuracy)} m).`;
+    if (document.getElementById('e-lembrar').checked) {
+      const { error } = await db.rpc('definir_minha_localizacao', { p_lat: LOJA.local.lat, p_lng: LOJA.local.lng });
+      if (error) st.textContent += ' Não foi possível guardar no perfil: ' + traduzErro(error.message);
+      else { st.textContent += ' Distâncias até os produtores atualizadas.'; agendarRecarga(); }
+    }
+  }, (erro) => {
+    st.textContent = erro.code === 1
+      ? 'Permissão negada: a entrega segue só com o endereço.'
+      : 'Não foi possível obter a localização agora. A entrega segue só com o endereço.';
+  }, { enableHighAccuracy: true, timeout: 15000, maximumAge: 60000 });
+}
+
+async function finalizarPedido(ev) {
+  ev.preventDefault();
+  const erro = document.getElementById('erro-carrinho');
+  erro.textContent = '';
+  const itens = itensDoCarrinho();
+  if (!itens.length) { erro.textContent = 'O carrinho está vazio.'; return; }
+  if (itens.some(i => !i.ok)) { erro.textContent = 'Ajuste ou remova os itens marcados antes de finalizar.'; return; }
+  const v = id => document.getElementById(id).value.trim();
+  if (!v('e-log') || !v('e-num') || !v('e-cid') || v('e-uf').length !== 2) {
+    erro.textContent = 'Preencha o endereço de entrega: endereço, número, cidade e UF.';
+    return;
+  }
+  const entrega = {
+    grupo: uuid(),
+    entrega_cep: v('e-cep') || null,
+    entrega_logradouro: v('e-log'),
+    entrega_numero: v('e-num'),
+    entrega_cidade: v('e-cid'),
+    entrega_uf: v('e-uf').toUpperCase(),
+    entrega_lat: LOJA.local ? LOJA.local.lat : null,
+    entrega_lng: LOJA.local ? LOJA.local.lng : null,
+    observacao: v('e-obs') || null
+  };
+  const linhas = itens.map(i => ({ produto_id: i.produto_id, comprador_id: MEU_USUARIO.id, quantidade: i.qtd, ...entrega }));
+  const bt = document.getElementById('btn-finalizar');
+  bt.disabled = true;
+  // Um único INSERT com todas as linhas: o banco confere estoque e preço de cada uma
+  const { error } = await db.from('pedidos').insert(linhas);
+  if (error) {
+    bt.disabled = false;
+    erro.textContent = traduzErro(error.message);
+    agendarRecarga(); // estoque pode ter mudado: atualiza vitrine e carrinho
+    return;
+  }
+  const total = itens.reduce((s, i) => s + i.qtd * Number(i.p.preco), 0);
+  LOJA.carrinho = [];
+  salvarCarrinho();
+  document.getElementById('e-obs').value = '';
+  renderCarrinho();
+  irPara('meus-pedidos');
+  avisoMeusPedidos(`Pedido enviado: ${itens.length} ite${itens.length === 1 ? 'm' : 'ns'}, ${moeda(total)}. `
+                 + 'Cada produtor confirma a sua parte; acompanhe aqui.');
+  agendarRecarga();
+}
+
+function avisoMeusPedidos(texto, tipo = 'ok') {
+  const el = document.getElementById('msg-meus-pedidos');
+  el.className = tipo;
+  el.textContent = texto;
+  if (texto) el.focus();
+}
+
+const ROTULO_STATUS = {
+  pendente:   ['b-o', 'Aguardando o produtor'],
+  confirmado: ['b-g', 'Confirmado'],
+  entregue:   ['b-g', 'Entregue'],
+  cancelado:  ['b-n', 'Cancelado']
+};
+
+function renderMeusPedidos() {
+  if (!MEU_USUARIO || MEU_USUARIO.perfil !== 'comprador') return;
+  const area = document.getElementById('lista-compras');
+  const meus = LOJA.pedidos.filter(p => p.comprador_id === MEU_USUARIO.id)
+    .sort((a, b) => new Date(b.criado_em) - new Date(a.criado_em)); // compra mais recente primeiro
+  if (!meus.length) {
+    area.innerHTML = '<div class="em-breve"><strong>Nenhum pedido ainda</strong>Escolha produtos no Marketplace e finalize pelo carrinho.</div>';
+    return;
+  }
+  const compras = new Map(); // pedidos do mesmo carrinho ficam juntos
+  meus.forEach(p => {
+    const chave = p.grupo || 'pedido-' + p.id;
+    if (!compras.has(chave)) compras.set(chave, []);
+    compras.get(chave).push(p);
+  });
+  area.innerHTML = [...compras.values()].map(itens => {
+    const primeiro = itens[0];
+    const total = itens.filter(i => i.status !== 'cancelado')
+      .reduce((s, i) => s + i.quantidade * Number(i.preco_unitario || 0), 0);
+    const endereco = primeiro.entrega_logradouro
+      ? `${primeiro.entrega_logradouro}, ${primeiro.entrega_numero || 's/n'} — ${primeiro.entrega_cidade}/${primeiro.entrega_uf}` : '';
+    return `<article class="cd compra"><div class="cd-h"><h2>Compra de ${dataHora(primeiro.criado_em)}</h2>`
+      + `<p>${itens.length} ite${itens.length === 1 ? 'm' : 'ns'} · ${moeda(total)}${endereco ? ' · Entrega: ' + esc(endereco) : ''}</p>`
+      + (primeiro.observacao ? `<p>Observação: ${esc(primeiro.observacao)}</p>` : '')
+      + `</div><ul class="itens-compra">`
+      + itens.map(i => {
+          const prod = i.produtos || {};
+          const u = esc(prod.unidade || '');
+          const st = ROTULO_STATUS[i.status] || ['b-n', i.status];
+          const pr = LOJA.produtores.get(prod.agricultor_id);
+          const etapas = i.status === 'cancelado'
+            ? `<li class="feita">Pedido ${dataHora(i.criado_em)}</li><li class="feita">Cancelado ${i.cancelado_em ? dataHora(i.cancelado_em) : ''}</li>`
+            : `<li class="feita">Pedido ${dataHora(i.criado_em)}</li>`
+            + `<li class="${i.confirmado_em ? 'feita' : ''}">Confirmado ${i.confirmado_em ? dataHora(i.confirmado_em) : '(aguardando)'}</li>`
+            + `<li class="${i.entregue_em ? 'feita' : ''}">Entregue ${i.entregue_em ? dataHora(i.entregue_em) : '(aguardando)'}</li>`;
+          return `<li><div><span aria-hidden="true">${esc(prod.emoji || '')}</span> <strong>${esc(prod.nome || 'Produto')}</strong>`
+            + ` · ${numero(i.quantidade)} ${u} · ${moeda(i.quantidade * Number(i.preco_unitario || 0))}`
+            + `<small>${esc(pr ? textoProdutor(pr) : '')}</small></div>`
+            + `<span class="badge ${st[0]}">${st[1]}</span>`
+            + (i.status === 'pendente'
+                ? `<button type="button" class="acao perigo" data-cancelar="${i.id}" aria-label="Cancelar o pedido de ${esc(prod.nome || 'produto')}">Cancelar</button>` : '')
+            + `<ol class="etapas" aria-label="Andamento do pedido">${etapas}</ol></li>`;
+        }).join('')
+      + `</ul></article>`;
+  }).join('');
+}
+
+async function cancelarPedido(id) {
+  const ped = LOJA.pedidos.find(p => p.id === id);
+  if (!ped) return;
+  const nome = (ped.produtos && ped.produtos.nome) || 'este produto';
+  if (!confirm(`Cancelar o pedido de ${nome}?`)) return;
+  const { data, error } = await db.from('pedidos').update({ status: 'cancelado' }).eq('id', id).select('id');
+  if (error) { avisoMeusPedidos(traduzErro(error.message), 'erro'); return; }
+  if (!data || !data.length) { avisoMeusPedidos('Não foi possível cancelar este pedido.', 'erro'); return; }
+  avisoMeusPedidos(`Pedido de ${nome} cancelado.`);
+  agendarRecarga();
+}
+
+// Ouvintes únicos (os botões são recriados a cada atualização)
+document.getElementById('vitrine').addEventListener('click', (e) => {
+  const bt = e.target.closest('button[data-adicionar]');
+  if (bt) adicionarAoCarrinho(Number(bt.dataset.adicionar));
+});
+document.getElementById('vitrine').addEventListener('keydown', (e) => {
+  if (e.key === 'Enter' && e.target.matches('input[id^="q-"]')) { e.preventDefault(); adicionarAoCarrinho(Number(e.target.id.slice(2))); }
+});
+document.getElementById('itens-carrinho').addEventListener('change', (e) => {
+  const campo = e.target.closest('input[data-qtd]');
+  if (!campo) return;
+  const item = LOJA.carrinho.find(x => x.produto_id === Number(campo.dataset.qtd));
+  const q = Math.floor(Number(campo.value));
+  if (item && q >= 1) { item.qtd = q; salvarCarrinho(); }
+  renderCarrinho();
+  renderLoja();
+});
+document.getElementById('itens-carrinho').addEventListener('click', (e) => {
+  const bt = e.target.closest('button[data-remover]');
+  if (!bt) return;
+  const id = Number(bt.dataset.remover);
+  const p = PRODUTOS.find(x => x.id === id);
+  LOJA.carrinho = LOJA.carrinho.filter(x => x.produto_id !== id);
+  salvarCarrinho();
+  mensagemLoja(`${p ? p.nome : 'Produto'} removido do carrinho.`);
+  renderCarrinho();
+  renderLoja();
+  document.getElementById('tit-carrinho').focus();
+});
+document.getElementById('lista-compras').addEventListener('click', (e) => {
+  const bt = e.target.closest('button[data-cancelar]');
+  if (bt) cancelarPedido(Number(bt.dataset.cancelar));
 });
 
 /* ---------- Tempo real ----------
