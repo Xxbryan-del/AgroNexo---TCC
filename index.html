@@ -5,6 +5,8 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <meta name="description" content="AgroNexo — gestão e comercialização da agricultura familiar">
 <title>AgroNexo - Gestão e Comercialização da Agricultura Familiar</title>
+<!-- Leaflet (versão fixa): mapa da rota de entregas -->
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.css">
 <style>
 *{margin:0;padding:0;box-sizing:border-box;font-family:'Segoe UI',system-ui,sans-serif}
 
@@ -253,6 +255,41 @@ html.hc .produto-card,html.hc .compra{border:2px solid #fff}
 .etapas li.feita{color:var(--verde-tx);font-weight:600}
 .etapas li.feita::before{content:"● ";}
 @media(max-width:1100px){.loja{grid-template-columns:minmax(0,1fr)}.carrinho{position:static}}
+
+/* ===== PEDIDOS DO AGRICULTOR, ROTA E RASTREIO ===== */
+.acoes-grupo{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}
+.acoes-item{display:flex;gap:6px;flex-wrap:wrap}
+.acao.principal{background:var(--g2);color:var(--on);border-color:var(--g2)}
+html.hc .acao.principal{background:#FFD400;color:#000}
+.rota-corpo{padding:14px 20px 20px}
+.rota-acoes{display:flex;flex-wrap:wrap;gap:10px;align-items:center}
+.rota-acoes a.btn-novo{text-decoration:none;display:inline-flex;align-items:center}
+.rota-acoes .acao{min-height:40px}
+#status-rota{margin-top:8px;font-size:.82rem}
+.rota-grid{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.2fr);gap:16px;margin-top:12px}
+.paradas{padding-left:22px;font-size:.88rem}
+.paradas li{padding:7px 0;border-top:1px solid var(--bd)}
+.paradas li:first-child{border-top:none}
+.paradas small{display:block;color:var(--l);font-size:.78rem}
+.mapa{position:relative;z-index:0;height:300px;border-radius:8px;border:1px solid var(--bdi);background:var(--suave)}
+.marcador{background:#1E8449;color:#fff;border-radius:50%;width:26px;height:26px;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:.8rem;border:2px solid #fff;box-shadow:0 1px 4px rgba(0,0,0,.45)}
+.marcador.origem{background:#9C3D00;font-size:.9rem}
+.qr-imagem{display:flex;justify-content:center;margin:12px 0}
+.qr-imagem svg{width:220px;height:220px;background:#fff;padding:6px;border-radius:8px}
+#qr-link{width:100%;padding:9px;border:1px solid var(--bdi);border-radius:8px;font-size:.8rem;margin:8px 0 4px;background:var(--suave);color:var(--d)}
+.rastreio-wrap{min-height:100vh;display:flex;align-items:center;justify-content:center;padding:20px 20px 90px}
+.rastreio-card{max-width:520px}
+.rastreio-produto{display:flex;gap:12px;align-items:center;margin-bottom:12px}
+.rastreio-produto .em{font-size:2.4rem;line-height:1}
+.rastreio-produto h2{font-size:1.15rem}
+.rastreio-linha{padding:10px 0;border-top:1px solid var(--bd);font-size:.9rem}
+.rastreio-linha strong{display:block;font-size:.75rem;color:var(--l);text-transform:uppercase;letter-spacing:.03em;margin-bottom:2px}
+.linha-tempo{list-style:none;margin-top:4px}
+.linha-tempo li{padding:5px 0 5px 22px;position:relative;font-size:.88rem;color:var(--l)}
+.linha-tempo li::before{content:"";position:absolute;left:3px;top:10px;width:10px;height:10px;border-radius:50%;border:2px solid var(--bdi);background:var(--card)}
+.linha-tempo li.feita{color:var(--d)}
+.linha-tempo li.feita::before{background:var(--g2);border-color:var(--g2)}
+@media(max-width:1000px){.rota-grid{grid-template-columns:minmax(0,1fr)}}
 .barra-produtos select{width:100%;padding:11px;border:1px solid var(--bdi);border-radius:8px;font-size:.9rem;background:var(--card);color:var(--d)}
 
 /* ===== BARRA DE ACESSIBILIDADE ===== */
@@ -394,6 +431,19 @@ html.hc .acess button[aria-pressed="true"]{background:#FFD400;color:#000}
 </div>
 
 <!-- ==================== APP (DASHBOARD) ==================== -->
+<!-- ==================== RASTREIO PÚBLICO (aberto pelo QR code, sem login) ==================== -->
+<div class="rastreio-wrap hidden" id="tela-rastreio">
+<div class="login-card rastreio-card">
+<div class="login-h">
+<div class="logo" aria-hidden="true">🌱</div>
+<h1>Rastreabilidade AgroNexo</h1>
+<p>De onde veio este produto e o caminho até você</p>
+</div>
+<div class="login-b" id="rastreio-conteudo" aria-live="polite">Consultando…</div>
+<p class="bemvindo"><a href="./" class="link">Conhecer o AgroNexo</a></p>
+</div>
+</div>
+
 <div class="app hidden" id="tela-app">
 <aside class="sb">
 <div class="sb-h"><span class="logo" aria-hidden="true">🌱</span><strong>AgroNexo</strong></div>
@@ -590,6 +640,35 @@ html.hc .acess button[aria-pressed="true"]{background:#FFD400;color:#000}
 <div class="lista-compras" id="lista-compras"></div>
 </section>
 
+<!-- ===== TELA: PEDIDOS (agricultor; admin só consulta) ===== -->
+<section class="tela hidden" id="tela-pedidos" aria-labelledby="titulo">
+<div class="filtros" id="filtros-pedidos" role="group" aria-label="Filtrar pedidos">
+<button type="button" data-filtro="pendente" aria-pressed="true">A confirmar <span class="cont"></span></button>
+<button type="button" data-filtro="confirmado" aria-pressed="false">A entregar <span class="cont"></span></button>
+<button type="button" data-filtro="entregue" aria-pressed="false">Entregues <span class="cont"></span></button>
+<button type="button" data-filtro="cancelado" aria-pressed="false">Cancelados <span class="cont"></span></button>
+<button type="button" data-filtro="todos" aria-pressed="false">Todos <span class="cont"></span></button>
+</div>
+<div class="ok" id="msg-pedidos" role="status" tabindex="-1"></div>
+
+<div class="cd" id="card-rota">
+<div class="cd-h"><h2 id="tit-rota">Rota de entregas</h2><p id="sub-rota">Pedidos confirmados, agrupados por endereço e ordenados pela distância</p></div>
+<div class="rota-corpo">
+<div class="rota-acoes">
+<button type="button" class="acao" id="bt-local-fazenda" onclick="definirLocalPropriedade()"><span aria-hidden="true">📍</span> Definir localização da propriedade</button>
+<a class="btn-novo hidden" id="bt-maps" target="_blank" rel="noopener">Abrir rota no Google Maps</a>
+</div>
+<p class="obs" id="status-rota" aria-live="polite"></p>
+<div class="rota-grid">
+<ol class="paradas" id="paradas" aria-label="Ordem sugerida das entregas"></ol>
+<div class="mapa" id="mapa" role="img" aria-label="Mapa com a propriedade e as entregas numeradas na ordem sugerida"></div>
+</div>
+</div>
+</div>
+
+<div class="lista-compras" id="lista-pedidos"></div>
+</section>
+
 <!-- ===== TELAS AINDA NÃO CONSTRUÍDAS ===== -->
 <section class="tela hidden" id="tela-em-breve" aria-labelledby="titulo">
 <div class="em-breve"><strong id="em-breve-titulo">Em construção</strong>Esta tela entra na próxima etapa do cronograma.</div>
@@ -613,6 +692,23 @@ html.hc .acess button[aria-pressed="true"]{background:#FFD400;color:#000}
 </form>
 </div>
 
+<!-- MODAL: QR CODE DE RASTREIO -->
+<div class="modal hidden" id="modal-qr" role="dialog" aria-modal="true" aria-labelledby="qr-titulo" onclick="if(event.target===this)fecharQr()">
+<div class="modal-caixa">
+<h2 id="qr-titulo">QR code de rastreio</h2>
+<p id="qr-produto"></p>
+<div class="qr-imagem" id="qr-imagem" role="img"></div>
+<p class="obs">Imprima e cole na embalagem ou envie ao comprador: o QR abre a origem do produto, sem login.</p>
+<label class="sr" for="qr-link">Link de rastreio</label>
+<input id="qr-link" readonly>
+<p class="obs" id="qr-status" aria-live="polite"></p>
+<div class="linha2">
+<button type="button" class="btn btn-avancar" id="bt-copiar-qr" onclick="copiarLinkQr()">Copiar link</button>
+<button type="button" class="btn btn-voltar" onclick="fecharQr()">Fechar</button>
+</div>
+</div>
+</div>
+
 <!-- BARRA DE ACESSIBILIDADE (RF12 — WCAG 2.1) -->
 <div class="acess" role="toolbar" aria-label="Recursos de acessibilidade">
 <button type="button" onclick="mudarFonte(-1)" aria-label="Diminuir o texto">A−</button>
@@ -624,6 +720,9 @@ html.hc .acess button[aria-pressed="true"]{background:#FFD400;color:#000}
 
 <!-- Chart.js (versão fixa): gráfico do Dashboard -->
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+<!-- QR code do rastreio e mapa da rota (versões fixas) -->
+<script src="https://cdn.jsdelivr.net/npm/qrcode-generator@1.4.4/qrcode.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
 /* ================================================================
@@ -700,6 +799,7 @@ function traduzErro(msg) {
   if (/ativo/.test(msg) && /column/i.test(msg))  return 'Para arquivar produtos, rode o script 02-historico-dashboard.sql no Supabase.';
   if (msg.includes('foreign key'))               return 'Este produto já tem pedidos e não pode ser apagado. Use "Arquivar".';
   if (/ajustar_estoque/.test(msg))               return 'Para registrar movimentações, rode o script 03-estoque.sql no Supabase.';
+  if (/rastreio_publico/.test(msg))              return 'A página de rastreio precisa do script 05-rastreabilidade.sql no Supabase.';
   if (/(grupo|entrega_|observacao|definir_minha_localizacao)/.test(msg) && /(column|function|schema cache)/i.test(msg))
                                                  return 'Para fazer pedidos, rode o script 04-marketplace.sql no Supabase.';
   return msg;
@@ -948,7 +1048,7 @@ const MENUS = {
     { id: 'relatorios', ic: '📈', nome: 'Relatórios' }
   ]
 };
-const TELAS_PRONTAS = ['dashboard', 'produtos', 'estoque', 'marketplace', 'meus-pedidos'];
+const TELAS_PRONTAS = ['dashboard', 'produtos', 'estoque', 'pedidos', 'marketplace', 'meus-pedidos'];
 let TELA_ATUAL = 'dashboard';
 
 function itensDoMenu() { return MENUS[MEU_USUARIO.perfil] || MENUS.agricultor; }
@@ -985,6 +1085,7 @@ function irPara(tela) {
   if (!pronta) document.getElementById('em-breve-titulo').textContent = item.nome + ': em construção';
   if (item.id === 'dashboard' && PAINEL.grafico) PAINEL.grafico.resize(); // canvas estava escondido
   if (item.id === 'estoque' && MEU_USUARIO) carregarEstoque();          // histórico só é buscado quando a tela abre
+  if (item.id === 'pedidos' && MEU_USUARIO) carregarPedidos();
 }
 
 async function abrirApp() {
@@ -1005,6 +1106,7 @@ async function abrirApp() {
   configurarProdutos();
   configurarEstoque();
   configurarLoja();
+  configurarPedidos();
   document.getElementById('tela-auth').classList.add('hidden');
   document.getElementById('tela-app').classList.remove('hidden');
   irPara('dashboard');
@@ -1036,15 +1138,17 @@ async function carregarTudo() {
   const secoes = document.querySelectorAll('.tela');
   secoes.forEach(s => s.classList.add('atualizando'));
   try {
-    const [, dadosPainel, dadosEstoque, dadosLoja] = await Promise.all([
+    const [, dadosPainel, dadosEstoque, dadosLoja, dadosPedidos] = await Promise.all([
       carregarProdutos(),
       buscarDadosPainel(),
       TELA_ATUAL === 'estoque' ? buscarEstoque() : Promise.resolve(null),
-      MEU_USUARIO.perfil === 'comprador' ? buscarLoja() : Promise.resolve(null)
+      MEU_USUARIO.perfil === 'comprador' ? buscarLoja() : Promise.resolve(null),
+      TELA_ATUAL === 'pedidos' ? buscarPedidos() : Promise.resolve(null)
     ]);
     if (MEU_USUARIO) renderPainel(dadosPainel);
     if (MEU_USUARIO && dadosEstoque) aplicarEstoque(dadosEstoque);
     if (MEU_USUARIO && dadosLoja) aplicarLoja(dadosLoja);
+    if (MEU_USUARIO && dadosPedidos) aplicarPedidos(dadosPedidos);
   } catch (e) {
     console.error(e);
     document.getElementById('aviso-dash').textContent = 'Não foi possível atualizar o painel agora. Verifique a conexão.';
@@ -1869,6 +1973,389 @@ document.getElementById('lista-compras').addEventListener('click', (e) => {
   if (bt) cancelarPedido(Number(bt.dataset.cancelar));
 });
 
+/* ================================================================
+   SEÇÃO 3E — PEDIDOS DO AGRICULTOR, ROTA DE ENTREGAS E RASTREIO
+   • Confirmar dá baixa no estoque (trigger baixar_estoque); se faltar
+     estoque, o banco recusa e a mensagem aparece aqui.
+   • Rota: entregas confirmadas, agrupadas por endereço e ordenadas pela
+     regra do "vizinho mais próximo" (sempre a parada mais perto da anterior).
+     É uma sugestão; não é a rota ótima. Distâncias em linha reta.
+   • Rastreio: cada pedido tem um código aleatório; o QR abre ?rastreio=<código>.
+================================================================ */
+const PED = { lista: [], filtro: 'pendente', origem: null, mapa: null, camada: null, qrFocoAntes: null };
+const FILTROS_PEDIDO = {
+  pendente:   p => p.status === 'pendente',
+  confirmado: p => p.status === 'confirmado',
+  entregue:   p => p.status === 'entregue',
+  cancelado:  p => p.status === 'cancelado',
+  todos:      () => true
+};
+const ROTULO_STATUS_AGRICULTOR = {
+  pendente:   ['b-o', 'A confirmar'],
+  confirmado: ['b-g', 'Confirmado · a entregar'],
+  entregue:   ['b-g', 'Entregue'],
+  cancelado:  ['b-n', 'Cancelado']
+};
+
+function configurarPedidos() {
+  Object.assign(PED, { lista: [], filtro: 'pendente', origem: null });
+  document.getElementById('msg-pedidos').textContent = '';
+  document.getElementById('card-rota').classList.toggle('hidden', MEU_USUARIO.perfil !== 'agricultor');
+  document.querySelectorAll('#filtros-pedidos button').forEach(b => b.setAttribute('aria-pressed', b.dataset.filtro === 'pendente'));
+}
+
+async function buscarPedidos() {
+  const agricultor = MEU_USUARIO.perfil === 'agricultor';
+  const [pedidos, eu] = await Promise.all([
+    db.from('pedidos').select('*, produtos(nome, unidade, emoji, agricultor_id)')
+      .order('criado_em', { ascending: false }).limit(300),
+    agricultor ? db.from('usuarios').select('*').eq('id', MEU_USUARIO.id).single() : Promise.resolve({ data: null })
+  ]);
+  return { pedidos, eu };
+}
+function aplicarPedidos(res) {
+  let lista = (res.pedidos && res.pedidos.data) || [];
+  if (MEU_USUARIO.perfil === 'agricultor') lista = lista.filter(p => p.produtos && p.produtos.agricultor_id === MEU_USUARIO.id);
+  PED.lista = lista;
+  const eu = res.eu && res.eu.data;
+  PED.origem = eu && eu.latitude != null ? { lat: Number(eu.latitude), lng: Number(eu.longitude) } : null;
+  renderPedidos();
+}
+async function carregarPedidos() { aplicarPedidos(await buscarPedidos()); }
+
+function avisoPedidos(texto, tipo = 'ok') {
+  const el = document.getElementById('msg-pedidos');
+  el.className = tipo;
+  el.textContent = texto;
+  if (texto) el.focus();
+}
+
+function enderecoEntrega(p, completo = true) {
+  if (!p.entrega_cidade) return '';
+  return (completo && p.entrega_logradouro ? `${p.entrega_logradouro}, ${p.entrega_numero || 's/n'} — ` : '')
+       + `${p.entrega_cidade}/${p.entrega_uf || ''}`;
+}
+
+function renderPedidos() {
+  const admin = MEU_USUARIO.perfil === 'admin';
+  document.querySelectorAll('#filtros-pedidos button').forEach(b => {
+    b.querySelector('.cont').textContent = '(' + PED.lista.filter(FILTROS_PEDIDO[b.dataset.filtro]).length + ')';
+  });
+  // A confirmar / a entregar: mais antigo primeiro (ordem de chegada); o resto: mais recente primeiro
+  const antigoPrimeiro = PED.filtro === 'pendente' || PED.filtro === 'confirmado';
+  const lista = PED.lista.filter(FILTROS_PEDIDO[PED.filtro])
+    .sort((a, b) => (new Date(a.criado_em) - new Date(b.criado_em)) * (antigoPrimeiro ? 1 : -1));
+  const area = document.getElementById('lista-pedidos');
+  if (!lista.length) {
+    const vazio = { pendente: 'Nenhum pedido esperando confirmação.', confirmado: 'Nenhuma entrega pendente.',
+                    entregue: 'Nenhum pedido entregue ainda.', cancelado: 'Nenhum pedido cancelado.', todos: 'Nenhum pedido recebido ainda.' };
+    area.innerHTML = `<div class="em-breve"><strong>${vazio[PED.filtro]}</strong>`
+      + (PED.lista.length ? 'Veja os outros filtros acima.' : 'Os pedidos feitos no Marketplace aparecem aqui em tempo real.') + '</div>';
+  } else {
+    const compras = new Map(); // itens do mesmo carrinho ficam juntos
+    lista.forEach(p => {
+      const chave = p.grupo || 'pedido-' + p.id;
+      if (!compras.has(chave)) compras.set(chave, []);
+      compras.get(chave).push(p);
+    });
+    area.innerHTML = [...compras.values()].map(itens => {
+      const p0 = itens[0];
+      const total = itens.filter(i => i.status !== 'cancelado').reduce((s, i) => s + i.quantidade * Number(i.preco_unitario || 0), 0);
+      const pend = itens.filter(i => i.status === 'pendente').map(i => i.id);
+      const conf = itens.filter(i => i.status === 'confirmado').map(i => i.id);
+      const acoesGrupo = admin ? '' : (pend.length > 1 ? `<button type="button" class="acao principal" data-acao-grupo="confirmar" data-ids="${pend.join(',')}">Confirmar todos (${pend.length})</button>` : '')
+        + (conf.length > 1 ? `<button type="button" class="acao principal" data-acao-grupo="entregar" data-ids="${conf.join(',')}">Marcar todos como entregues (${conf.length})</button>` : '');
+      return `<article class="cd compra"><div class="cd-h">`
+        + `<h2>${esc(p0.comprador_nome || 'Comprador')} · ${dataHora(p0.criado_em)}</h2>`
+        + `<p>${itens.length} ite${itens.length === 1 ? 'm' : 'ns'} · ${moeda(total)}`
+        + (enderecoEntrega(p0) ? ` · Entrega: ${esc(enderecoEntrega(p0))}` : '') + `</p>`
+        + (p0.observacao ? `<p>Observação: ${esc(p0.observacao)}</p>` : '')
+        + (acoesGrupo ? `<div class="acoes-grupo">${acoesGrupo}</div>` : '')
+        + `</div><ul class="itens-compra">`
+        + itens.map(i => {
+            const prod = i.produtos || {};
+            const nome = esc(prod.nome || 'Produto'), u = esc(prod.unidade || '');
+            const st = ROTULO_STATUS_AGRICULTOR[i.status] || ['b-n', i.status];
+            let botoes = '';
+            if (!admin) {
+              if (i.status === 'pendente') botoes =
+                  `<button type="button" class="acao principal" data-acao="confirmar" data-id="${i.id}" aria-label="Confirmar ${nome}">Confirmar</button>`
+                + `<button type="button" class="acao perigo" data-acao="recusar" data-id="${i.id}" aria-label="Recusar ${nome}">Recusar</button>`;
+              else if (i.status === 'confirmado') botoes =
+                  `<button type="button" class="acao principal" data-acao="entregar" data-id="${i.id}" aria-label="Marcar ${nome} como entregue">Entregue</button>`
+                + `<button type="button" class="acao" data-acao="qr" data-id="${i.id}" aria-label="QR code de rastreio de ${nome}">QR de rastreio</button>`
+                + `<button type="button" class="acao perigo" data-acao="cancelar" data-id="${i.id}" aria-label="Cancelar ${nome}">Cancelar</button>`;
+              else if (i.status === 'entregue') botoes =
+                  `<button type="button" class="acao" data-acao="qr" data-id="${i.id}" aria-label="QR code de rastreio de ${nome}">QR de rastreio</button>`;
+            }
+            const etapas = i.status === 'cancelado'
+              ? `<li class="feita">Pedido ${dataHora(i.criado_em)}</li><li class="feita">Cancelado ${i.cancelado_em ? dataHora(i.cancelado_em) : ''}</li>`
+              : `<li class="feita">Pedido ${dataHora(i.criado_em)}</li>`
+              + `<li class="${i.confirmado_em ? 'feita' : ''}">Confirmado ${i.confirmado_em ? dataHora(i.confirmado_em) : '(aguardando)'}</li>`
+              + `<li class="${i.entregue_em ? 'feita' : ''}">Entregue ${i.entregue_em ? dataHora(i.entregue_em) : '(aguardando)'}</li>`;
+            return `<li><div><span aria-hidden="true">${esc(prod.emoji || '')}</span> <strong>${nome}</strong>`
+              + ` · ${numero(i.quantidade)} ${u} · ${moeda(i.quantidade * Number(i.preco_unitario || 0))}</div>`
+              + `<span class="badge ${st[0]}">${st[1]}</span>`
+              + (botoes ? `<div class="acoes-item">${botoes}</div>` : '')
+              + `<ol class="etapas" aria-label="Andamento do pedido">${etapas}</ol></li>`;
+          }).join('')
+        + `</ul></article>`;
+    }).join('');
+  }
+  if (!admin) renderRota();
+}
+
+// Muda o status de um ou vários pedidos (um UPDATE por pedido; o banco valida cada um)
+async function mudarStatus(ids, novo, [feitoUm, feitoVarios]) {
+  let certos = 0;
+  const erros = [];
+  for (const id of ids) {
+    const { data, error } = await db.from('pedidos').update({ status: novo }).eq('id', id).select('id');
+    if (error) erros.push(traduzErro(error.message));
+    else if (data && data.length) certos++;
+    else erros.push('Sem permissão para este pedido.');
+  }
+  const partes = [];
+  if (certos) partes.push(certos > 1 ? `${certos} pedidos ${feitoVarios}.` : `Pedido ${feitoUm}.`);
+  if (erros.length) partes.push([...new Set(erros)].join(' '));
+  avisoPedidos(partes.join(' '), erros.length ? 'erro' : 'ok');
+  agendarRecarga();
+}
+
+function acaoPedido(acao, ids) {
+  const p = PED.lista.find(x => x.id === ids[0]);
+  const nome = p && p.produtos ? p.produtos.nome : 'o pedido';
+  if (acao === 'confirmar') mudarStatus(ids, 'confirmado', ['confirmado (estoque baixado)', 'confirmados (estoque baixado)']);
+  else if (acao === 'entregar') mudarStatus(ids, 'entregue', ['marcado como entregue', 'marcados como entregues']);
+  else if (acao === 'recusar') { if (confirm(`Recusar o pedido de ${nome}? O comprador verá o pedido como cancelado.`)) mudarStatus(ids, 'cancelado', ['recusado', 'recusados']); }
+  else if (acao === 'cancelar') { if (confirm(`Cancelar o pedido de ${nome}? O estoque baixado volta para o produto.`)) mudarStatus(ids, 'cancelado', ['cancelado (estoque devolvido)', 'cancelados (estoque devolvido)']); }
+  else if (acao === 'qr') abrirQr(ids[0]);
+}
+
+/* ---------- Rota de entregas ---------- */
+function distanciaKm(a, b) {
+  const rad = x => x * Math.PI / 180;
+  const dLat = rad(b.lat - a.lat), dLng = rad(b.lng - a.lng);
+  const h = Math.sin(dLat / 2) ** 2 + Math.cos(rad(a.lat)) * Math.cos(rad(b.lat)) * Math.sin(dLng / 2) ** 2;
+  return 6371 * 2 * Math.asin(Math.min(1, Math.sqrt(h)));
+}
+
+// Vizinho mais próximo: a partir da propriedade, vai sempre para a parada mais perto da atual.
+// Paradas sem coordenadas vão no fim, agrupadas por cidade (o Google Maps usa o endereço delas).
+function ordenarParadas(paradas, origem) {
+  const restantes = paradas.filter(p => p.lat != null);
+  const semCoordenada = paradas.filter(p => p.lat == null)
+    .sort((a, b) => (a.cidade || '').localeCompare(b.cidade || '', 'pt-BR'));
+  const ordem = [];
+  let atual = origem;
+  if (!atual && restantes.length) { atual = restantes.shift(); atual.trecho = null; ordem.push(atual); }
+  while (restantes.length) {
+    let melhor = 0, menor = Infinity;
+    restantes.forEach((p, i) => { const d = distanciaKm(atual, p); if (d < menor) { menor = d; melhor = i; } });
+    const proxima = restantes.splice(melhor, 1)[0];
+    proxima.trecho = menor;
+    ordem.push(proxima);
+    atual = proxima;
+  }
+  semCoordenada.forEach(p => { p.trecho = null; ordem.push(p); });
+  return ordem;
+}
+
+function montarParadas() {
+  const paradas = new Map(); // mesma compra = mesmo endereço = uma parada só
+  PED.lista.filter(p => p.status === 'confirmado').forEach(p => {
+    const chave = p.grupo || 'pedido-' + p.id;
+    if (!paradas.has(chave)) paradas.set(chave, {
+      comprador: p.comprador_nome || 'Comprador',
+      endereco: enderecoEntrega(p),
+      enderecoMaps: [p.entrega_logradouro, p.entrega_numero, p.entrega_cidade, p.entrega_uf].filter(Boolean).join(', '),
+      cidade: p.entrega_cidade ? `${p.entrega_cidade}/${p.entrega_uf || ''}` : '',
+      lat: p.entrega_lat != null ? Number(p.entrega_lat) : null,
+      lng: p.entrega_lng != null ? Number(p.entrega_lng) : null,
+      itens: []
+    });
+    paradas.get(chave).itens.push(`${numero(p.quantidade)} ${(p.produtos && p.produtos.unidade) || ''} de ${(p.produtos && p.produtos.nome) || 'produto'}`);
+  });
+  return [...paradas.values()];
+}
+
+function renderRota() {
+  const lista = document.getElementById('paradas');
+  const status = document.getElementById('status-rota');
+  const maps = document.getElementById('bt-maps');
+  const mapaEl = document.getElementById('mapa');
+  document.getElementById('bt-local-fazenda').lastChild.textContent = PED.origem
+    ? ' Atualizar localização da propriedade' : ' Definir localização da propriedade';
+  const ordem = ordenarParadas(montarParadas(), PED.origem);
+  if (!ordem.length) {
+    lista.innerHTML = '';
+    maps.classList.add('hidden');
+    mapaEl.classList.add('hidden');
+    status.textContent = 'Nenhuma entrega pendente. Ao confirmar pedidos, a rota aparece aqui.';
+    return;
+  }
+  const totalKm = ordem.reduce((s, p) => s + (p.trecho || 0), 0);
+  const semLocal = ordem.filter(p => p.lat == null).length;
+  status.textContent = `${ordem.length} parada${ordem.length > 1 ? 's' : ''}`
+    + (totalKm ? ` · cerca de ${numero(totalKm, 1)} km em linha reta` : '')
+    + (PED.origem ? ' · saindo da propriedade' : ' · defina a localização da propriedade para a rota começar nela')
+    + (semLocal ? ` · ${semLocal} sem localização (o Google Maps usa o endereço)` : '');
+  lista.innerHTML = ordem.map((p, i) =>
+    `<li><strong>${esc(p.comprador)}</strong> — ${esc(p.endereco || 'endereço não informado')}`
+    + `<small>${esc(p.itens.join(', '))}`
+    + (p.trecho != null ? ` · ${numero(p.trecho, 1)} km do ponto anterior` : (p.lat == null ? ' · sem localização' : ''))
+    + `</small></li>`).join('');
+
+  // Google Maps: origem, até 9 paradas intermediárias e o destino final
+  const ponto = p => (p.lat != null ? `${p.lat},${p.lng}` : p.enderecoMaps);
+  const destinos = ordem.slice(0, 10);
+  const params = new URLSearchParams({ api: '1', travelmode: 'driving', destination: ponto(destinos[destinos.length - 1]) });
+  if (PED.origem) params.set('origin', `${PED.origem.lat},${PED.origem.lng}`);
+  if (destinos.length > 1) params.set('waypoints', destinos.slice(0, -1).map(ponto).join('|'));
+  maps.href = 'https://www.google.com/maps/dir/?' + params.toString();
+  maps.classList.remove('hidden');
+  if (ordem.length > 10) status.textContent += ' · o link do Google Maps leva as 10 primeiras paradas';
+
+  desenharMapaRota(ordem);
+}
+
+function desenharMapaRota(ordem) {
+  const mapaEl = document.getElementById('mapa');
+  const comLocal = ordem.map((p, i) => ({ ...p, n: i + 1 })).filter(p => p.lat != null);
+  if (typeof L === 'undefined' || (!comLocal.length && !PED.origem)) { mapaEl.classList.add('hidden'); return; }
+  mapaEl.classList.remove('hidden');
+  if (!PED.mapa) {
+    PED.mapa = L.map(mapaEl, { scrollWheelZoom: false });
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      maxZoom: 18, attribution: '&copy; colaboradores do OpenStreetMap'
+    }).addTo(PED.mapa);
+  }
+  if (PED.camada) PED.camada.remove();
+  PED.camada = L.layerGroup().addTo(PED.mapa);
+  const pontos = [];
+  const icone = (texto, classe) => L.divIcon({ className: '', html: `<div class="marcador ${classe}">${texto}</div>`, iconSize: [26, 26], iconAnchor: [13, 13] });
+  if (PED.origem) {
+    L.marker([PED.origem.lat, PED.origem.lng], { icon: icone('🏡', 'origem'), title: 'Propriedade (saída)' }).addTo(PED.camada);
+    pontos.push([PED.origem.lat, PED.origem.lng]);
+  }
+  comLocal.forEach(p => {
+    L.marker([p.lat, p.lng], { icon: icone(p.n, ''), title: `${p.n}. ${p.comprador}` })
+      .bindPopup(`${p.n}. ${esc(p.comprador)}<br>${esc(p.endereco)}`).addTo(PED.camada);
+    pontos.push([p.lat, p.lng]);
+  });
+  if (pontos.length > 1) L.polyline(pontos, { color: '#1E8449', weight: 3, opacity: .8 }).addTo(PED.camada);
+  setTimeout(() => {           // o mapa precisa estar visível para medir o tamanho
+    PED.mapa.invalidateSize();
+    if (pontos.length === 1) PED.mapa.setView(pontos[0], 14);
+    else PED.mapa.fitBounds(pontos, { padding: [30, 30] });
+  }, 50);
+}
+
+function definirLocalPropriedade() {
+  const st = document.getElementById('status-rota');
+  if (!('geolocation' in navigator)) { st.textContent = 'Este navegador não informa a localização.'; return; }
+  st.textContent = 'Pedindo a localização ao navegador… (faça isso estando na propriedade)';
+  navigator.geolocation.getCurrentPosition(async (pos) => {
+    const { error } = await db.rpc('definir_minha_localizacao', { p_lat: pos.coords.latitude, p_lng: pos.coords.longitude });
+    if (error) { st.textContent = 'Não foi possível salvar: ' + traduzErro(error.message); return; }
+    PED.origem = { lat: pos.coords.latitude, lng: pos.coords.longitude };
+    renderRota();
+    st.textContent = 'Localização da propriedade salva. ' + st.textContent;
+  }, (erro) => {
+    st.textContent = erro.code === 1 ? 'Permissão de localização negada.' : 'Não foi possível obter a localização agora.';
+  }, { enableHighAccuracy: true, timeout: 15000, maximumAge: 0 });
+}
+
+/* ---------- QR code de rastreio ---------- */
+function linkRastreio(codigo) { return window.location.origin + window.location.pathname + '?rastreio=' + codigo; }
+
+function abrirQr(id) {
+  const p = PED.lista.find(x => x.id === id);
+  if (!p) return;
+  if (!p.codigo_rastreio) { avisoPedidos('Este pedido não tem código de rastreio: rode o script 04-marketplace.sql no Supabase.', 'erro'); return; }
+  const link = linkRastreio(p.codigo_rastreio);
+  const nome = (p.produtos && p.produtos.nome) || 'produto';
+  document.getElementById('qr-produto').textContent = `${nome} · ${numero(p.quantidade)} ${(p.produtos && p.produtos.unidade) || ''} · ${p.comprador_nome || 'Comprador'}`;
+  const img = document.getElementById('qr-imagem');
+  img.setAttribute('aria-label', `QR code que abre o rastreio de ${nome}`);
+  // Se a biblioteca não carregou (sem internet) ou o QR falhar, a janela abre mesmo assim, com o link
+  try {
+    if (typeof qrcode !== 'function') throw new Error('biblioteca indisponível');
+    const qr = qrcode(0, 'M');
+    qr.addData(link);
+    qr.make();
+    img.innerHTML = qr.createSvgTag(5, 2);
+  } catch (e) {
+    console.warn('QR code não gerado:', e);
+    img.textContent = 'Não foi possível desenhar o QR code agora. Use o link abaixo.';
+  }
+  document.getElementById('qr-link').value = link;
+  document.getElementById('qr-status').textContent = '';
+  PED.qrFocoAntes = document.activeElement;
+  document.getElementById('modal-qr').classList.remove('hidden');
+  document.getElementById('bt-copiar-qr').focus();
+}
+function fecharQr() {
+  document.getElementById('modal-qr').classList.add('hidden');
+  if (PED.qrFocoAntes) PED.qrFocoAntes.focus();
+}
+async function copiarLinkQr() {
+  const campo = document.getElementById('qr-link');
+  const st = document.getElementById('qr-status');
+  try { await navigator.clipboard.writeText(campo.value); st.textContent = 'Link copiado.'; }
+  catch (e) { campo.select(); st.textContent = 'Selecione o link e copie com Ctrl+C.'; }
+}
+
+/* ---------- Página pública de rastreio (sem login) ---------- */
+async function mostrarRastreio(codigo) {
+  document.getElementById('tela-auth').classList.add('hidden');
+  document.getElementById('tela-rastreio').classList.remove('hidden');
+  const area = document.getElementById('rastreio-conteudo');
+  if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(codigo)) {
+    area.textContent = 'Código de rastreio inválido. Confira o QR code ou o link.';
+    return;
+  }
+  if (!db) { area.textContent = dbErro || 'Serviço indisponível no momento.'; return; }
+  const { data, error } = await db.rpc('rastreio_publico', { p_codigo: codigo });
+  if (error) { area.textContent = 'Não foi possível consultar agora. ' + traduzErro(error.message); return; }
+  if (!data || !data.length) { area.textContent = 'Código não encontrado. Confira o QR code ou o link.'; return; }
+  const r = data[0];
+  const dia = iso => new Date(iso).toLocaleDateString('pt-BR', { timeZone: TZ, day: '2-digit', month: '2-digit', year: 'numeric' });
+  const origem = [r.produtor_cidade, r.produtor_uf].filter(Boolean).join('/');
+  const etapas = [
+    ['Pedido feito', r.pedido_em],
+    ['Confirmado pelo produtor', r.confirmado_em],
+    [r.status === 'cancelado' ? 'Cancelado' : `Entregue${r.entrega_cidade ? ' em ' + r.entrega_cidade + '/' + (r.entrega_uf || '') : ''}`,
+     r.status === 'cancelado' ? r.cancelado_em : r.entregue_em]
+  ];
+  document.title = `Rastreio: ${r.produto} · AgroNexo`;
+  area.innerHTML =
+      `<div class="rastreio-produto"><span class="em" aria-hidden="true">${esc(r.emoji || '🌱')}</span>`
+    + `<div><h2>${esc(r.produto)}</h2><p class="obs">${numero(r.quantidade)} ${esc(r.unidade || '')}</p></div></div>`
+    + `<div class="rastreio-linha"><strong>Produzido por</strong>${esc(r.produtor)}${origem ? ' — ' + esc(origem) : ''}</div>`
+    + `<div class="rastreio-linha"><strong>Colheita (lote)</strong>`
+    + (r.colheita_em ? `Registrada em ${dia(r.colheita_em)}${r.colheita_quantidade ? ` (${numero(r.colheita_quantidade)} ${esc(r.unidade || '')})` : ''}`
+                     : 'Sem colheita registrada no sistema antes desta venda')
+    + `</div><div class="rastreio-linha"><strong>Caminho do pedido</strong><ol class="linha-tempo">`
+    + etapas.map(([texto, quando]) => `<li class="${quando ? 'feita' : ''}">${esc(texto)}${quando ? ' · ' + dataHora(quando) : ' (aguardando)'}</li>`).join('')
+    + `</ol></div>`;
+}
+
+document.getElementById('lista-pedidos').addEventListener('click', (e) => {
+  const bt = e.target.closest('button[data-acao], button[data-acao-grupo]');
+  if (!bt) return;
+  if (bt.dataset.acaoGrupo) acaoPedido(bt.dataset.acaoGrupo, bt.dataset.ids.split(',').map(Number));
+  else acaoPedido(bt.dataset.acao, [Number(bt.dataset.id)]);
+});
+document.getElementById('filtros-pedidos').addEventListener('click', (e) => {
+  const bt = e.target.closest('button[data-filtro]');
+  if (!bt) return;
+  PED.filtro = bt.dataset.filtro;
+  document.querySelectorAll('#filtros-pedidos button').forEach(b => b.setAttribute('aria-pressed', b === bt));
+  document.getElementById('msg-pedidos').textContent = ''; // a mensagem era da ação anterior
+  renderPedidos();
+});
+
 /* ---------- Tempo real ----------
    Uma confirmação de pedido gera 3 eventos seguidos (pedido, produto e histórico);
    esperamos 400 ms e recarregamos uma vez só. */
@@ -1983,11 +2470,11 @@ function fecharModal() {
   document.getElementById('modal').classList.add('hidden');
   if (focoAntesDoModal) focoAntesDoModal.focus();
 }
-// Teclado no modal: Esc fecha; Tab fica preso dentro da janela.
+// Teclado nas janelas (produto e QR code): Esc fecha; Tab fica preso dentro da janela.
 document.addEventListener('keydown', (e) => {
-  const modal = document.getElementById('modal');
-  if (modal.classList.contains('hidden')) return;
-  if (e.key === 'Escape') { fecharModal(); return; }
+  const modal = document.querySelector('.modal:not(.hidden)');
+  if (!modal) return;
+  if (e.key === 'Escape') { if (modal.id === 'modal-qr') fecharQr(); else fecharModal(); return; }
   if (e.key !== 'Tab') return;
   const focaveis = modal.querySelectorAll('input, select, button');
   const primeiro = focaveis[0], ultimo = focaveis[focaveis.length - 1];
@@ -2426,6 +2913,9 @@ function pularParaConteudo(ev) {
 (async function init() {
   try { prefs = Object.assign(prefs, JSON.parse(localStorage.getItem(CHAVE_ACESS) || '{}')); } catch (e) {}
   aplicarPreferencias();
+  // Link do QR code (?rastreio=...): mostra a ficha pública do produto, sem login
+  const codigoRastreio = new URLSearchParams(window.location.search).get('rastreio');
+  if (codigoRastreio) { await mostrarRastreio(codigoRastreio); return; }
   if (!db) { mostrarErro(dbErro || 'Banco indisponível.'); return; } // erro visível na tela, não críptico
   const { data } = await db.auth.getSession();
   if (!data.session) return;

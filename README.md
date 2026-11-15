@@ -10,6 +10,7 @@ ODS 08 (Trabalho Decente e Crescimento Econômico). Projeto de TCC — CEUNI FAM
 - HTML5, CSS3 e JavaScript puro, em um único arquivo (`index.html`)
 - [Supabase](https://supabase.com): PostgreSQL, autenticação, tempo real e Row Level Security
 - Chart.js (gráficos do Dashboard) e API ViaCEP (endereço automático no cadastro)
+- Leaflet + OpenStreetMap (mapa da rota de entregas) e qrcode-generator (QR de rastreio)
 - Acessibilidade WCAG 2.1: alto contraste, tamanho de fonte e leitura em voz alta
 
 ## Telas
@@ -21,7 +22,9 @@ ODS 08 (Trabalho Decente e Crescimento Econômico). Projeto de TCC — CEUNI FAM
 | Meus Produtos (editar, arquivar, excluir) | pronta |
 | Estoque (entradas, saídas e perdas com motivo, CSV) | pronta |
 | Marketplace (vitrine, carrinho, entrega e distância) e Meus Pedidos do comprador | pronta |
-| Pedidos do agricultor (rotas e rastreabilidade), Relatórios | em construção |
+| Pedidos do agricultor: confirmar/entregar, rota de entregas (mapa + Google Maps) e QR code de rastreio | pronta |
+| Página pública de rastreabilidade (`?rastreio=<código>`, sem login) | pronta |
+| Relatórios (previsão de demanda) e modo offline | em construção |
 
 ## Banco de dados
 
@@ -32,6 +35,7 @@ nesta ordem (cada um pode ser rodado mais de uma vez):
 2. `02-historico-dashboard.sql` — histórico de estoque e vendas por dia
 3. `03-estoque.sql` — movimentações de estoque com motivo
 4. `04-marketplace.sql` — pedido com entrega, localização e código de rastreio
+5. `05-rastreabilidade.sql` — ficha pública do produto aberta pelo QR code
 
 ## Publicação
 
