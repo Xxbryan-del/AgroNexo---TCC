@@ -1,0 +1,33 @@
+#!/bin/sh
+# ============================================================================
+# AgroNexo — envio automático para o GitHub depois de cada commit
+#
+# Funciona com commits feitos no VS Code, no GitHub Desktop ou no terminal.
+# Na main, o GitHub Pages publica o site em ~1 minuto depois do envio.
+#
+# Ativar neste computador (uma vez só):   git config core.hooksPath .githooks
+# Desligar:                               git config --unset core.hooksPath
+#
+# Se não houver internet, o commit continua salvo no computador e vai junto
+# no próximo commit (ou no botão "Push origin" do GitHub Desktop).
+# ============================================================================
+
+branch=$(git rev-parse --abbrev-ref HEAD)
+
+# Sem branch (ex.: no meio de um rebase): não envia nada
+[ "$branch" = "HEAD" ] && exit 0
+git_dir=$(git rev-parse --git-dir)
+if [ -d "$git_dir/rebase-merge" ] || [ -d "$git_dir/rebase-apply" ]; then
+  exit 0
+fi
+
+echo "[envio automático] Enviando '$branch' para o GitHub..."
+if git push --quiet -u origin "$branch"; then
+  echo "[envio automático] Pronto: o commit está no GitHub."
+else
+  echo "[envio automático] Não foi possível enviar agora (sem internet, sem login ou o GitHub tem commits que você ainda não baixou)."
+  echo "[envio automático] O commit ficou salvo no computador. Use 'Pull' e depois 'Push' no GitHub Desktop."
+fi
+
+# Nunca desfaz o commit, mesmo se o envio falhar
+exit 0

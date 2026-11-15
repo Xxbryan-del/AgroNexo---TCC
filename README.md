@@ -33,5 +33,13 @@ nesta ordem (cada um pode ser rodado mais de uma vez):
 
 ## Publicação
 
-Cada commit é enviado automaticamente para este repositório (hook `post-commit`),
-e o GitHub Pages atualiza o site em cerca de 1 minuto.
+Cada commit é enviado automaticamente para este repositório pelo gancho
+`.githooks/post-commit`, e o GitHub Pages atualiza o site em cerca de 1 minuto.
+
+Para ativar o envio automático em outro computador (uma vez, depois de clonar):
+
+```bash
+git config core.hooksPath .githooks
+```
+
+Sem internet, o commit fica salvo no computador e vai junto no próximo envio.
