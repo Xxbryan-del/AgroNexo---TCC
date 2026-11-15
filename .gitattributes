@@ -1,0 +1,3 @@
+# Scripts do Git precisam de quebra de linha Unix (LF), inclusive no Windows;
+# com CRLF o gancho de envio automático para de funcionar.
+.githooks/* text eol=lf
