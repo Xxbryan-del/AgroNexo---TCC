@@ -3,191 +3,266 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>AgroFamília - Sistema de Gestão e Comercialização</title>
+<meta name="description" content="AgroNexo — gestão e comercialização da agricultura familiar">
+<title>AgroNexo - Gestão e Comercialização da Agricultura Familiar</title>
 <style>
 *{margin:0;padding:0;box-sizing:border-box;font-family:'Segoe UI',system-ui,sans-serif}
-:root{--g1:#27AE60;--g2:#1E8449;--gl:#E8F8F0;--o1:#D35400;--y1:#F39C12;--d:#2C3E50;--l:#7F8C8D;--bg:#F5F6FA;--bd:#E0E0E0;--sh:0 2px 8px rgba(0,0,0,.08)}
+
+/* ===== CORES =====
+   Contraste conferido pela WCAG 2.1 AA (mínimo 4,5:1 para texto).
+   --g1 (#27AE60) só serve de detalhe decorativo: texto branco sobre ele dá 2,87:1 e reprova.
+   Botões usam --g2 (#1E8449), que dá 4,72:1 com texto branco. */
+:root{
+  --g1:#27AE60; --g2:#1E8449; --g3:#196F3D; --gl:#E8F8F0; --verde-tx:#196F3D;
+  --o1:#9C3D00; --y1:#F39C12;
+  --d:#2C3E50; --l:#5B6770; --bg:#F5F6FA; --card:#fff; --suave:#F0F0F0;
+  --bd:#E0E0E0;   /* divisórias decorativas */
+  --bdi:#8A949C;  /* borda de campos: 3:1, exigido pela WCAG 1.4.11 */
+  --on:#fff;      /* texto sobre fundo verde */
+  --foco:#1E8449;
+  --erro-bg:#FADBD8; --erro-tx:#96281B; --ok-bg:#E8F8F0; --ok-tx:#196F3D;
+  --laranja-bg:#FDEBD0;
+  --sh:0 2px 8px rgba(0,0,0,.08);
+}
+/* Alto contraste (botão "Contraste" da barra de acessibilidade) */
+html.hc{
+  --g1:#FFD400; --g2:#000; --g3:#333; --gl:#000; --verde-tx:#7CFC9A;
+  --o1:#FFD400; --y1:#FFD400;
+  --d:#fff; --l:#fff; --bg:#000; --card:#000; --suave:#000;
+  --bd:#fff; --bdi:#fff; --on:#fff; --foco:#FFD400;
+  --erro-bg:#000; --erro-tx:#FF9B9B; --ok-bg:#000; --ok-tx:#7CFC9A; --laranja-bg:#000;
+  --sh:none;
+}
+html.hc :is(.btn,.btn-novo,.btn-sair,.tabs button,.pcard,.badge,.erro,.ok,.login-card,.cd,.stat,.modal-caixa,.acess,.acess button){border:2px solid #fff}
+html.hc .tabs button.at{background:#FFD400;color:#000}
+html.hc .sb{border-right:2px solid #fff}
+html.hc .login-h{border-bottom:2px solid #fff}
+/* Tamanho do texto (botões A− / A+): tudo usa rem, então escala junto */
+html.fs-1{font-size:112.5%} html.fs-2{font-size:125%} html.fs-3{font-size:137.5%}
+
 body{background:var(--bg);color:var(--d)}
 .hidden{display:none!important}
+.sr{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0}
+:focus-visible{outline:3px solid var(--foco);outline-offset:2px}
+.sb :focus-visible{outline-color:#fff}
+html.hc .sb :focus-visible{outline-color:var(--foco)}
+.pular{position:absolute;left:12px;top:-60px;background:var(--g2);color:var(--on);padding:10px 16px;border-radius:8px;z-index:100;font-weight:600;text-decoration:none}
+.pular:focus{top:12px}
 
 /* ===== AUTENTICAÇÃO ===== */
-.auth-wrap{min-height:100vh;display:flex;align-items:center;justify-content:center;padding:20px}
-.login-card{background:#fff;border-radius:12px;box-shadow:0 4px 16px rgba(0,0,0,.12);width:100%;max-width:460px;overflow:hidden}
+.auth-wrap{min-height:100vh;display:flex;align-items:center;justify-content:center;padding:20px 20px 90px}
+.login-card{background:var(--card);border-radius:12px;box-shadow:0 4px 16px rgba(0,0,0,.12);width:100%;max-width:460px;overflow:hidden}
 .login-h{background:var(--g2);padding:26px;text-align:center}
-.login-h .logo{font-size:38px}
-.login-h h1{color:#fff;font-size:1.25rem;margin-top:6px}
-.login-h p{color:rgba(255,255,255,.7);font-size:.8rem;margin-top:4px}
+.login-h .logo{font-size:2.4rem}
+.login-h h1{color:var(--on);font-size:1.25rem;margin-top:6px}
+.login-h p{color:var(--on);font-size:.85rem;margin-top:4px}
 .login-b{padding:26px}
+.login-b:focus{outline:none}
 .tabs{display:flex;gap:8px;margin-bottom:18px}
-.tabs button{flex:1;padding:10px;border:none;border-radius:8px;font-weight:600;cursor:pointer;background:#F0F0F0;color:var(--l);font-size:.9rem}
-.tabs button.at{background:var(--g2);color:#fff}
+.tabs button{flex:1;padding:10px;border:none;border-radius:8px;font-weight:600;cursor:pointer;background:var(--suave);color:var(--l);font-size:.9rem}
+.tabs button.at{background:var(--g2);color:var(--on)}
 .field{margin-bottom:13px}
-.field label{display:block;font-size:.82rem;font-weight:600;margin-bottom:5px}
-.field input,.field select{width:100%;padding:11px;border:1px solid var(--bd);border-radius:8px;font-size:.9rem;outline:none;background:#fff}
-.field input:focus{border-color:var(--g1)}
+.field label{display:block;font-size:.85rem;font-weight:600;margin-bottom:5px}
+.field input,.field select{width:100%;padding:11px;border:1px solid var(--bdi);border-radius:8px;font-size:.9rem;background:var(--card);color:var(--d)}
+.field input:focus,.field select:focus{border-color:var(--g2)}
+.field input[readonly]{background:var(--suave)}
+.dica{display:block;color:var(--l);font-size:.78rem;font-weight:400;margin-top:3px}
 .senha-wrap{position:relative}
-.senha-wrap input{padding-right:42px}
-.olho{position:absolute;right:12px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;font-size:1rem}
-.linha{display:flex;justify-content:space-between;align-items:center;font-size:.8rem;margin:2px 0 4px}
+.senha-wrap input{padding-right:46px}
+.olho{position:absolute;right:4px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;font-size:1rem;min-width:40px;min-height:40px}
+.linha{display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:6px;font-size:.85rem;margin:2px 0 4px}
 .linha label{display:flex;align-items:center;gap:6px;color:var(--l);cursor:pointer}
-.linha a{color:var(--g2);text-decoration:none;font-weight:600}
-.btn{width:100%;padding:12px;border:none;border-radius:8px;font-size:.93rem;font-weight:600;cursor:pointer;background:var(--g1);color:#fff;margin-top:6px}
+.link{background:none;border:none;color:var(--verde-tx);font-weight:600;cursor:pointer;font-size:inherit;text-decoration:underline;padding:4px 0}
+.btn{width:100%;padding:12px;border:none;border-radius:8px;font-size:.93rem;font-weight:600;cursor:pointer;background:var(--g2);color:var(--on);margin-top:6px}
 .btn:hover{opacity:.9}
-.btn:disabled{opacity:.5;cursor:wait}
-.btn-out{background:#fff;border:2px solid var(--bd);color:var(--d)}
-.btn-voltar{background:#F0F0F0;color:var(--l);flex:1}
+.btn:disabled{opacity:.6;cursor:wait}
+.btn-out{background:var(--card);border:2px solid var(--bdi);color:var(--d)}
+.btn-voltar{background:var(--suave);color:var(--d);flex:1}
 .btn-avancar{flex:2;margin-top:0}
-.divisor{display:flex;align-items:center;gap:10px;margin:14px 0;color:var(--l);font-size:.75rem}
+.divisor{display:flex;align-items:center;gap:10px;margin:14px 0;color:var(--l);font-size:.8rem}
 .divisor::before,.divisor::after{content:'';flex:1;height:1px;background:var(--bd)}
-.erro{background:#FADBD8;color:#C0392B;padding:8px 12px;border-radius:8px;font-size:.8rem;margin-bottom:12px;display:none}
-.ok{background:var(--gl);color:var(--g2);padding:8px 12px;border-radius:8px;font-size:.8rem;margin-bottom:12px;display:none}
-.bemvindo{text-align:center;margin-top:14px;font-size:.78rem;color:var(--l)}
+.erro{background:var(--erro-bg);color:var(--erro-tx);padding:8px 12px;border-radius:8px;font-size:.85rem;margin-bottom:12px}
+.ok{background:var(--ok-bg);color:var(--ok-tx);padding:8px 12px;border-radius:8px;font-size:.85rem;margin-bottom:12px}
+.erro:empty,.ok:empty{display:none}
+.bemvindo{text-align:center;margin-top:14px;font-size:.8rem;color:var(--l)}
 .steps{display:flex;justify-content:space-between;margin-bottom:18px;position:relative}
 .steps::before{content:'';position:absolute;top:14px;left:10%;right:10%;height:2px;background:var(--bd);z-index:0}
 .step{display:flex;flex-direction:column;align-items:center;gap:4px;position:relative;z-index:1;flex:1}
-.step .bola{width:28px;height:28px;border-radius:50%;background:#F0F0F0;color:var(--l);display:flex;align-items:center;justify-content:center;font-size:.78rem;font-weight:700;border:2px solid var(--bd)}
-.step span{font-size:.66rem;color:var(--l);font-weight:600}
-.step.on .bola{background:var(--g1);border-color:var(--g1);color:#fff}
-.step.on span{color:var(--g2)}
+.step .bola{width:28px;height:28px;border-radius:50%;background:var(--suave);color:var(--l);display:flex;align-items:center;justify-content:center;font-size:.78rem;font-weight:700;border:2px solid var(--bdi)}
+.step span{font-size:.72rem;color:var(--l);font-weight:600}
+.step.on .bola{background:var(--g2);border-color:var(--g2);color:var(--on)}
+html.hc .step.on .bola{border-color:var(--g1)}
+.step.on span{color:var(--verde-tx)}
 .perfis{display:flex;flex-direction:column;gap:10px}
-.pcard{display:flex;align-items:center;gap:12px;padding:14px;border:2px solid var(--bd);border-radius:10px;cursor:pointer;transition:.15s}
-.pcard:hover{border-color:var(--g1)}
-.pcard.sel{border-color:var(--g1);background:var(--gl)}
+.pcard{display:flex;align-items:center;gap:12px;padding:14px;border:2px solid var(--bd);border-radius:10px;cursor:pointer;transition:.15s;background:var(--card);color:var(--d);text-align:left;width:100%;font-size:inherit}
+.pcard:hover{border-color:var(--g2)}
+.pcard[aria-pressed="true"]{border-color:var(--g2);background:var(--gl)}
+html.hc .pcard[aria-pressed="true"]{border-color:var(--g1)}
 .pcard .em{font-size:1.6rem}
 .pcard strong{font-size:.92rem;display:block}
-.pcard small{color:var(--l);font-size:.75rem}
+.pcard small{color:var(--l);font-size:.8rem}
 .linha2{display:flex;gap:10px}
 .linha2 .field{flex:1;min-width:0}
-.ind-senha{font-size:.75rem;margin-top:-8px;margin-bottom:10px;display:block}
-.ind-senha.ok{color:var(--g2)}
+.ind-senha{font-size:.8rem;margin-top:-8px;margin-bottom:10px;display:block}
+.ind-senha.bom{color:var(--verde-tx)}
 .ind-senha.falta{color:var(--o1)}
 /* Correção do CNPJ cortado */
 #c-cnpj,#c-cep{font-size:.84rem;padding-left:10px;padding-right:10px}
 
 /* ===== DASHBOARD ===== */
 .app{display:flex;min-height:100vh}
-.sb{width:230px;background:var(--g2);color:#fff;position:fixed;height:100vh;display:flex;flex-direction:column}
-.sb-h{padding:20px;display:flex;align-items:center;gap:10px;border-bottom:1px solid rgba(255,255,255,.1)}
-.sb-h .logo{font-size:28px}.sb-h strong{font-size:1.1rem}
-.sb-user{padding:12px 20px;font-size:.78rem;opacity:.8;border-bottom:1px solid rgba(255,255,255,.1)}
+.sb{width:230px;background:var(--g2);color:var(--on);position:fixed;height:100vh;display:flex;flex-direction:column}
+.sb-h{padding:20px;display:flex;align-items:center;gap:10px;border-bottom:1px solid rgba(255,255,255,.2)}
+.sb-h .logo{font-size:1.75rem}.sb-h strong{font-size:1.1rem}
+.sb-user{padding:12px 20px;font-size:.82rem;border-bottom:1px solid rgba(255,255,255,.2)}
 .sb-n{flex:1;padding:10px 0}
-.ni{display:flex;align-items:center;gap:12px;padding:12px 20px;color:rgba(255,255,255,.85);font-size:.92rem;cursor:pointer;border:none;background:none;width:100%;text-align:left}
+.ni{display:flex;align-items:center;gap:12px;padding:12px 20px;color:var(--on);font-size:.92rem;cursor:pointer;border:none;background:none;width:100%;text-align:left}
 .ni:hover{background:rgba(255,255,255,.12)}
-.ni.ac{background:#196F3D;border-left:4px solid var(--y1);font-weight:600}
-.sb-f{padding:14px 20px;border-top:1px solid rgba(255,255,255,.1);font-size:.72rem;opacity:.8}
-.mc{flex:1;margin-left:230px;padding:24px;display:flex;flex-direction:column;gap:20px}
+.ni[aria-current="page"]{background:var(--g3);border-left:4px solid var(--y1);font-weight:600}
+.sb-f{padding:14px 20px;border-top:1px solid rgba(255,255,255,.2);font-size:.78rem}
+.mc{flex:1;margin-left:230px;padding:24px 24px 90px;display:flex;flex-direction:column;gap:20px}
+.mc:focus{outline:none}
 .hd{display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:12px}
 .hd h1{font-size:1.4rem}
-.btn-sair{background:#FADBD8;color:#C0392B;padding:8px 16px;border:none;border-radius:8px;font-size:.82rem;font-weight:600;cursor:pointer}
-.btn-novo{background:var(--g1);color:#fff;padding:10px 18px;border:none;border-radius:8px;font-size:.88rem;font-weight:600;cursor:pointer}
-.stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:16px}
-.stat{background:#fff;border-radius:10px;padding:18px;box-shadow:var(--sh);display:flex;align-items:center;gap:14px}
-.stat .ic{width:46px;height:46px;border-radius:12px;background:var(--gl);display:flex;align-items:center;justify-content:center;font-size:1.3rem}
-.stat h3{font-size:1.3rem}.stat p{font-size:.8rem;color:var(--l)}
-.cd{background:#fff;border-radius:10px;box-shadow:var(--sh);overflow:hidden}
+.tempo-real{font-size:.78rem;color:var(--l);font-weight:400}
+.btn-sair{background:var(--erro-bg);color:var(--erro-tx);padding:8px 16px;border:none;border-radius:8px;font-size:.85rem;font-weight:600;cursor:pointer}
+.btn-novo{background:var(--g2);color:var(--on);padding:10px 18px;border:none;border-radius:8px;font-size:.88rem;font-weight:600;cursor:pointer}
+.stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:16px}
+@media(max-width:400px){.stats{gap:10px}.stat{padding:12px;gap:10px}.stat .ic{width:38px;height:38px}}
+.stat{background:var(--card);border-radius:10px;padding:18px;box-shadow:var(--sh);display:flex;align-items:center;gap:14px}
+.stat .ic{width:46px;height:46px;border-radius:12px;background:var(--gl);display:flex;align-items:center;justify-content:center;font-size:1.3rem;flex-shrink:0}
+.stat h3{font-size:1.3rem}.stat p{font-size:.85rem;color:var(--l)}
+.cd{background:var(--card);border-radius:10px;box-shadow:var(--sh);overflow:hidden}
 .ch{padding:16px 20px;border-bottom:1px solid var(--bd);font-weight:700;font-size:1rem}
+.tabela-wrap{overflow-x:auto}
 table{width:100%;border-collapse:collapse}
-th{padding:10px 18px;text-align:left;font-size:.75rem;color:var(--l);background:var(--bg);text-transform:uppercase}
+th{padding:10px 18px;text-align:left;font-size:.78rem;color:var(--l);background:var(--bg);text-transform:uppercase}
 td{padding:12px 18px;border-top:1px solid var(--bd);font-size:.88rem}
-.badge{padding:3px 10px;border-radius:14px;font-size:.72rem;font-weight:600}
-.b-g{background:var(--gl);color:var(--g2)}.b-o{background:#FDEBD0;color:var(--o1)}.b-r{background:#FADBD8;color:#C0392B}
+.badge{padding:3px 10px;border-radius:14px;font-size:.78rem;font-weight:600;white-space:nowrap}
+.b-g{background:var(--gl);color:var(--verde-tx)}
+.b-o{background:var(--laranja-bg);color:var(--o1)}
+.b-r{background:var(--erro-bg);color:var(--erro-tx)}
 .ao-vivo{display:inline-block;width:8px;height:8px;border-radius:50%;background:var(--g1);margin-right:6px;animation:pulsa 1.5s infinite}
 @keyframes pulsa{50%{opacity:.3}}
-.modal{position:fixed;inset:0;background:rgba(0,0,0,.4);display:flex;align-items:center;justify-content:center;padding:20px;z-index:50}
-.modal-caixa{background:#fff;border-radius:12px;padding:24px;width:100%;max-width:420px}
+@media (prefers-reduced-motion:reduce){.ao-vivo{animation:none}}
+.modal{position:fixed;inset:0;background:rgba(0,0,0,.5);display:flex;align-items:center;justify-content:center;padding:20px;z-index:50}
+.modal-caixa{background:var(--card);border-radius:12px;padding:24px;width:100%;max-width:420px;max-height:90vh;overflow-y:auto}
 .modal-caixa h2{font-size:1.1rem;margin-bottom:16px}
-@media(max-width:768px){.sb{display:none}.mc{margin-left:0}}
+
+/* ===== BARRA DE ACESSIBILIDADE ===== */
+.acess{position:fixed;right:12px;bottom:12px;display:flex;gap:6px;background:var(--card);padding:6px;border-radius:12px;box-shadow:0 4px 16px rgba(0,0,0,.18);border:1px solid var(--bdi);z-index:60}
+.acess button{min-width:44px;min-height:44px;padding:0 10px;border:1px solid var(--bdi);border-radius:8px;background:var(--card);color:var(--d);font-weight:700;font-size:.85rem;cursor:pointer}
+.acess button[aria-pressed="true"]{background:var(--g2);color:var(--on);border-color:var(--g2)}
+html.hc .acess button[aria-pressed="true"]{background:#FFD400;color:#000}
+
+/* ===== CELULAR ===== (antes a sidebar sumia e não sobrava menu) */
+@media(max-width:768px){
+  .app{flex-direction:column}
+  .sb{position:static;width:100%;height:auto}
+  .sb-h,.sb-user{padding:12px 16px}
+  .sb-n{display:flex;overflow-x:auto;padding:0}
+  .ni{white-space:nowrap;width:auto;padding:12px 14px}
+  .ni[aria-current="page"]{border-left:none;border-bottom:4px solid var(--y1)}
+  .sb-f{display:none}
+  .mc{margin-left:0;padding:16px 16px 90px}
+  .login-b{padding:20px}
+  .acess-rotulo{display:none}
+}
 </style>
 </head>
 <body>
+
+<a href="#conteudo" class="pular" onclick="pularParaConteudo(event)">Pular para o conteúdo</a>
 
 <!-- ==================== TELA DE AUTENTICAÇÃO ==================== -->
 <div class="auth-wrap" id="tela-auth">
 <div class="login-card">
 <div class="login-h">
-<div class="logo">🌱</div>
+<div class="logo" aria-hidden="true">🌱</div>
 <h1>AgroNexo</h1>
 <p>Gestão e Comercialização da Agricultura Familiar</p>
 </div>
-<div class="login-b">
+<div class="login-b" id="conteudo-auth" tabindex="-1">
 
-<div class="erro" id="erro"></div>
-<div class="ok" id="ok"></div>
+<div class="erro" id="erro" role="alert"></div>
+<div class="ok" id="ok" role="status"></div>
 
 <div class="tabs">
-<button class="at" id="tab-login" onclick="aba('login')">Entrar</button>
-<button id="tab-cad" onclick="aba('cad')">Cadastrar</button>
+<button type="button" class="at" id="tab-login" aria-pressed="true" onclick="aba('login')">Entrar</button>
+<button type="button" id="tab-cad" aria-pressed="false" onclick="aba('cad')">Cadastrar</button>
 </div>
 
-<!-- LOGIN -->
-<div id="form-login">
-<div class="field"><label>Email</label><input type="email" id="email" placeholder="seu@email.com"></div>
-<div class="field"><label>Senha</label>
+<!-- LOGIN (form: a tecla Enter também envia) -->
+<form id="form-login" onsubmit="fazerLogin(event)" novalidate>
+<div class="field"><label for="email">Email</label><input type="email" id="email" autocomplete="email" placeholder="seu@email.com"></div>
+<div class="field"><label for="senha">Senha</label>
 <div class="senha-wrap">
-<input type="password" id="senha" placeholder="Sua senha">
-<button type="button" class="olho" onclick="toggleSenha('senha',this)">👁️</button>
+<input type="password" id="senha" autocomplete="current-password" placeholder="Sua senha">
+<button type="button" class="olho" aria-label="Mostrar senha" aria-controls="senha" onclick="toggleSenha('senha',this)">👁️</button>
 </div></div>
 <div class="linha">
 <label><input type="checkbox" id="manter"> Manter conectado</label>
-<a href="#" onclick="esqueciSenha();return false">Esqueceu a senha?</a>
+<button type="button" class="link" onclick="esqueciSenha()">Esqueceu a senha?</button>
 </div>
-<button class="btn" id="btn-entrar" onclick="fazerLogin()">Entrar</button>
+<button type="submit" class="btn" id="btn-entrar">Entrar</button>
 <div class="divisor">ou</div>
-<button class="btn btn-out" onclick="alert('Login com Google disponível na versão final do sistema')">Entrar com Google</button>
-</div>
+<button type="button" class="btn btn-out" onclick="alert('Login com Google disponível na versão final do sistema')">Entrar com Google</button>
+</form>
 
 <!-- CADASTRO MULTI-ETAPA (4 etapas, como projetado) -->
-<div id="form-cad" class="hidden">
-<div class="steps">
+<form id="form-cad" class="hidden" onsubmit="proximaEtapa(event)" novalidate>
+<div class="steps" aria-hidden="true">
 <div class="step on" id="st1"><div class="bola">1</div><span>Perfil</span></div>
 <div class="step" id="st2"><div class="bola">2</div><span>Empresa</span></div>
 <div class="step" id="st3"><div class="bola">3</div><span>Endereço</span></div>
 <div class="step" id="st4"><div class="bola">4</div><span>Acesso</span></div>
 </div>
+<p class="sr" id="etapa-txt" aria-live="polite">Etapa 1 de 4: Perfil</p>
 
 <div class="etapa" id="et1">
-<div class="field"><label>Selecione seu perfil</label></div>
-<div class="perfis">
-<div class="pcard sel" onclick="selPerfil(this,'agricultor')"><span class="em">🌾</span><div><strong>Agricultor</strong><small>Produzo e quero vender direto ao comprador</small></div></div>
-<div class="pcard" onclick="selPerfil(this,'comprador')"><span class="em">🛒</span><div><strong>Comprador</strong><small>Compro produtos direto do produtor</small></div></div>
-<div class="pcard" onclick="selPerfil(this,'admin')"><span class="em">⚙️</span><div><strong>Administrador</strong><small>Gerencio a plataforma e valido cadastros</small></div></div>
+<div class="field"><label id="lb-perfil">Selecione seu perfil</label></div>
+<div class="perfis" role="group" aria-labelledby="lb-perfil">
+<button type="button" class="pcard" aria-pressed="true" onclick="selPerfil(this,'agricultor')"><span class="em" aria-hidden="true">🌾</span><span><strong>Agricultor</strong><small>Produzo e quero vender direto ao comprador</small></span></button>
+<button type="button" class="pcard" aria-pressed="false" onclick="selPerfil(this,'comprador')"><span class="em" aria-hidden="true">🛒</span><span><strong>Comprador</strong><small>Compro produtos direto do produtor</small></span></button>
+<!-- Administrador NÃO se cadastra pela tela pública: a conta é criada pelo painel do Supabase.
+     (Antes, qualquer visitante podia escolher "Administrador" aqui.) -->
 </div>
 </div>
 
 <div class="etapa hidden" id="et2">
-<div class="field"><label>Nome completo / Razão social</label><input type="text" id="c-nome" placeholder="Seu nome ou empresa"></div>
-<div class="field"><label>CNPJ</label><input type="text" id="c-cnpj" placeholder="00.000.000/0000-00" maxlength="18" oninput="mascCnpj()"></div>
-<div class="field"><label>Inscrição Estadual</label><input type="text" id="c-ie" placeholder="Número da IE (ou 'Isento')"></div>
+<div class="field"><label for="c-nome">Nome completo / Razão social</label><input type="text" id="c-nome" autocomplete="organization" placeholder="Seu nome ou empresa"></div>
+<div class="field"><label for="c-cnpj">CNPJ</label><input type="text" id="c-cnpj" inputmode="numeric" placeholder="00.000.000/0000-00" maxlength="18" oninput="mascCnpj()"></div>
+<div class="field"><label for="c-ie">Inscrição Estadual</label><input type="text" id="c-ie" placeholder="Número da IE (ou 'Isento')"></div>
 </div>
 
 <div class="etapa hidden" id="et3">
-<div class="field"><label>CEP <small style="color:var(--l)">(preenchimento automático)</small></label><input type="text" id="c-cep" placeholder="00000-000" maxlength="9" oninput="mascCep()" onblur="viaCep()"></div>
-<div class="field"><label>Logradouro</label><input type="text" id="c-log" placeholder="Rua, avenida..." disabled></div>
+<div class="field"><label for="c-cep">CEP <span class="dica">O endereço é preenchido automaticamente</span></label><input type="text" id="c-cep" inputmode="numeric" autocomplete="postal-code" placeholder="00000-000" maxlength="9" oninput="mascCep()"></div>
+<div class="field"><label for="c-log">Logradouro</label><input type="text" id="c-log" autocomplete="address-line1" placeholder="Rua, sítio, comunidade..." readonly></div>
 <div class="linha2">
-<div class="field"><label>Número</label><input type="text" id="c-num" placeholder="123"></div>
-<div class="field"><label>UF</label><input type="text" id="c-uf" placeholder="PB" maxlength="2" disabled></div>
+<div class="field"><label for="c-num">Número</label><input type="text" id="c-num" placeholder="123 ou S/N"></div>
+<div class="field"><label for="c-uf">UF</label><input type="text" id="c-uf" autocomplete="address-level1" placeholder="PB" maxlength="2" readonly></div>
 </div>
-<div class="field"><label>Cidade</label><input type="text" id="c-cid" placeholder="Sua cidade" disabled></div>
+<div class="field"><label for="c-cid">Cidade</label><input type="text" id="c-cid" autocomplete="address-level2" placeholder="Sua cidade" readonly></div>
 </div>
 
 <div class="etapa hidden" id="et4">
-<div class="field"><label>Email</label><input type="email" id="c-email" placeholder="seu@email.com"></div>
-<div class="field"><label>Senha (mín. 6 caracteres)</label>
+<div class="field"><label for="c-email">Email</label><input type="email" id="c-email" autocomplete="email" placeholder="seu@email.com"></div>
+<div class="field"><label for="c-senha">Senha (mín. 6 caracteres)</label>
 <div class="senha-wrap">
-<input type="password" id="c-senha" placeholder="Crie uma senha" oninput="forcaSenha()">
-<button type="button" class="olho" onclick="toggleSenha('c-senha',this)">👁️</button>
+<input type="password" id="c-senha" autocomplete="new-password" placeholder="Crie uma senha" oninput="forcaSenha()" aria-describedby="ind-senha">
+<button type="button" class="olho" aria-label="Mostrar senha" aria-controls="c-senha" onclick="toggleSenha('c-senha',this)">👁️</button>
 </div></div>
-<span class="ind-senha" id="ind-senha"></span>
-<div class="field"><label>Confirmar senha</label><input type="password" id="c-senha2" placeholder="Repita a senha"></div>
+<span class="ind-senha" id="ind-senha" aria-live="polite"></span>
+<div class="field"><label for="c-senha2">Confirmar senha</label><input type="password" id="c-senha2" autocomplete="new-password" placeholder="Repita a senha"></div>
 </div>
 
 <div class="linha2" style="margin-top:8px">
-<button class="btn btn-voltar" id="btn-voltar" onclick="etapaAnterior()" style="display:none">← Voltar</button>
-<button class="btn btn-avancar" id="btn-avancar" onclick="proximaEtapa()">Avançar →</button>
+<button type="button" class="btn btn-voltar" id="btn-voltar" onclick="etapaAnterior()" style="display:none">← Voltar</button>
+<button type="submit" class="btn btn-avancar" id="btn-avancar">Avançar →</button>
 </div>
-</div>
+</form>
 
-<p class="bemvindo">🌱 ODS 08 - Trabalho Decente e Crescimento Econômico</p>
+<p class="bemvindo"><span aria-hidden="true">🌱</span> ODS 08 - Trabalho Decente e Crescimento Econômico</p>
 </div>
 </div>
 </div>
@@ -195,60 +270,69 @@ td{padding:12px 18px;border-top:1px solid var(--bd);font-size:.88rem}
 <!-- ==================== APP (DASHBOARD) ==================== -->
 <div class="app hidden" id="tela-app">
 <aside class="sb">
-<div class="sb-h"><span class="logo">🌱</span><strong>AgroNexo</strong></div>
-<div class="sb-user" id="user-logado">⏳ Carregando...</div>
-<nav class="sb-n">
-<button class="ni ac" onclick="nav(this,'📊 Dashboard')">📊 Dashboard</button>
-<button class="ni" onclick="nav(this,'🌾 Meus Produtos')">🌾 Meus Produtos</button>
-<button class="ni" onclick="nav(this,'📦 Estoque')">📦 Estoque</button>
-<button class="ni" onclick="nav(this,'🛒 Pedidos')">🛒 Pedidos</button>
-<button class="ni" onclick="nav(this,'📈 Relatórios')">📈 Relatórios</button>
+<div class="sb-h"><span class="logo" aria-hidden="true">🌱</span><strong>AgroNexo</strong></div>
+<div class="sb-user" id="user-logado">Carregando...</div>
+<nav class="sb-n" aria-label="Menu principal">
+<button type="button" class="ni" aria-current="page" onclick="nav(this)"><span aria-hidden="true">📊</span> Dashboard</button>
+<button type="button" class="ni" onclick="nav(this)"><span aria-hidden="true">🌾</span> Meus Produtos</button>
+<button type="button" class="ni" onclick="nav(this)"><span aria-hidden="true">📦</span> Estoque</button>
+<button type="button" class="ni" onclick="nav(this)"><span aria-hidden="true">🛒</span> Pedidos</button>
+<button type="button" class="ni" onclick="nav(this)"><span aria-hidden="true">📈</span> Relatórios</button>
 </nav>
 <div class="sb-f">ODS 08 - Trabalho Decente e Crescimento Econômico</div>
 </aside>
 
-<main class="mc">
+<main class="mc" id="conteudo" tabindex="-1">
 <div class="hd">
-<h1 id="titulo">📊 Dashboard <span style="font-size:.75rem;color:var(--l)"><span class="ao-vivo"></span>tempo real</span></h1>
+<h1><span id="titulo">Dashboard</span> <span class="tempo-real"><span class="ao-vivo" aria-hidden="true"></span>tempo real</span></h1>
 <div style="display:flex;gap:10px">
-<button class="btn-novo" id="btn-novo" onclick="abrirModal()">+ Cadastrar Produto</button>
-<button class="btn-sair" onclick="fazerSair()">Sair</button>
+<button type="button" class="btn-novo" id="btn-novo" onclick="abrirModal()">+ Cadastrar Produto</button>
+<button type="button" class="btn-sair" onclick="fazerSair()">Sair</button>
 </div>
 </div>
 
 <div class="stats">
-<div class="stat"><div class="ic">🌾</div><div><h3 id="st-produtos">-</h3><p>Produtos</p></div></div>
-<div class="stat"><div class="ic">🛒</div><div><h3 id="st-pedidos">-</h3><p>Pedidos</p></div></div>
-<div class="stat"><div class="ic">💰</div><div><h3 id="st-receita">-</h3><p>Receita</p></div></div>
-<div class="stat"><div class="ic">⚠️</div><div><h3 id="st-alertas">-</h3><p>Alertas de estoque</p></div></div>
+<div class="stat"><div class="ic" aria-hidden="true">🌾</div><div><h3 id="st-produtos">-</h3><p>Produtos</p></div></div>
+<div class="stat"><div class="ic" aria-hidden="true">🛒</div><div><h3 id="st-pedidos">-</h3><p>Pedidos</p></div></div>
+<div class="stat"><div class="ic" aria-hidden="true">💰</div><div><h3 id="st-receita">-</h3><p id="lb-receita">Receita</p></div></div>
+<div class="stat"><div class="ic" aria-hidden="true">⚠️</div><div><h3 id="st-alertas">-</h3><p>Alertas de estoque</p></div></div>
 </div>
 
 <div class="cd">
-<div class="ch">Produtos (dados do banco, atualizados em tempo real)</div>
-<table>
-<thead><tr><th>Produto</th><th>Preço</th><th>Estoque</th><th>Status</th></tr></thead>
-<tbody id="tabela"><tr><td colspan="4">⏳ Carregando do banco...</td></tr></tbody>
+<h2 class="ch" id="tit-tabela">Produtos</h2>
+<div class="tabela-wrap">
+<table aria-labelledby="tit-tabela">
+<thead><tr><th scope="col">Produto</th><th scope="col">Preço</th><th scope="col">Estoque</th><th scope="col">Status</th></tr></thead>
+<tbody id="tabela"><tr><td colspan="4">Carregando do banco...</td></tr></tbody>
 </table>
+</div>
 </div>
 </main>
 </div>
 
 <!-- MODAL: CADASTRAR PRODUTO -->
-<div class="modal hidden" id="modal">
-<div class="modal-caixa">
-<h2>🌾 Cadastrar Novo Produto</h2>
-<div class="field"><label>Nome</label><input id="p-nome" placeholder="Ex: Tomate Italiano"></div>
-<div class="field"><label>Emoji</label><input id="p-emoji" value="🍅" maxlength="2"></div>
-<div class="field"><label>Preço (R$)</label><input id="p-preco" type="number" step="0.01" min="0" placeholder="6.50"></div>
-<div class="field"><label>Estoque</label><input id="p-estoque" type="number" min="0" placeholder="50"></div>
-<div class="field"><label>Estoque mínimo (alerta)</label><input id="p-min" type="number" min="0" value="5"></div>
-<div class="field"><label>Unidade</label><select id="p-un"><option>kg</option><option>un</option><option>duzia</option><option>pote</option><option>caixa</option></select></div>
-<button class="btn" id="btn-salvar" onclick="salvarProduto()">Salvar no banco</button>
-<button class="btn" style="background:#F0F0F0;color:var(--l)" onclick="fecharModal()">Cancelar</button>
-</div>
+<div class="modal hidden" id="modal" role="dialog" aria-modal="true" aria-labelledby="modal-titulo" onclick="if(event.target===this)fecharModal()">
+<form class="modal-caixa" id="form-produto" onsubmit="salvarProduto(event)" novalidate>
+<h2 id="modal-titulo"><span aria-hidden="true">🌾</span> Cadastrar Novo Produto</h2>
+<div class="erro" id="erro-modal" role="alert"></div>
+<div class="field"><label for="p-nome">Nome</label><input id="p-nome" maxlength="80" placeholder="Ex: Tomate Italiano"></div>
+<div class="field"><label for="p-emoji">Emoji</label><input id="p-emoji" value="🍅" maxlength="4"></div>
+<div class="field"><label for="p-preco">Preço (R$)</label><input id="p-preco" type="number" step="0.01" min="0.01" placeholder="6.50"></div>
+<div class="field"><label for="p-estoque">Estoque</label><input id="p-estoque" type="number" step="1" min="0" placeholder="50"></div>
+<div class="field"><label for="p-min">Estoque mínimo (alerta)</label><input id="p-min" type="number" step="1" min="0" value="5"></div>
+<div class="field"><label for="p-un">Unidade</label><select id="p-un"><option>kg</option><option>un</option><option>duzia</option><option>pote</option><option>caixa</option></select></div>
+<button type="submit" class="btn" id="btn-salvar">Salvar no banco</button>
+<button type="button" class="btn btn-voltar" onclick="fecharModal()">Cancelar</button>
+</form>
 </div>
 
-
+<!-- BARRA DE ACESSIBILIDADE (RF12 — WCAG 2.1) -->
+<div class="acess" role="toolbar" aria-label="Recursos de acessibilidade">
+<button type="button" onclick="mudarFonte(-1)" aria-label="Diminuir o texto">A−</button>
+<button type="button" onclick="mudarFonte(1)" aria-label="Aumentar o texto">A+</button>
+<button type="button" id="bt-hc" aria-pressed="false" aria-label="Alto contraste" onclick="alternarContraste()"><span aria-hidden="true">◐</span><span class="acess-rotulo"> Contraste</span></button>
+<button type="button" id="bt-voz" aria-pressed="false" aria-label="Ouvir: ler a tela em voz alta" onclick="lerTela()"><span aria-hidden="true">🔊</span><span class="acess-rotulo"> Ouvir</span></button>
+</div>
 
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -256,16 +340,24 @@ td{padding:12px 18px;border-top:1px solid var(--bd);font-size:.88rem}
 /* ================================================================
    SEÇÃO 1 — BANCO DE DADOS (era o db.js — agora embutido aqui)
 ================================================================ */
-src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"
 const SUPABASE_URL = 'https://abmglxkfcwlfnyggnkcm.supabase.co'; // sem /rest/v1/
-const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFibWdseGtmY3dsZm55Z2dua2NtIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTIwNDk5NjcsImV4cCI6MjEwNzYyNTk2N30.4gBQsVPqMS2GlIcov-OIohEg4IhTirQjG7LqTU3sz_Y'; // ← ⚠️ cole sua chave aqui (sb_publishable_... ou eyJ...)
+// Chave "anon" (pública por design): ela pode aparecer no site.
+// Quem protege os dados é o RLS no banco. A chave "service_role" NUNCA entra aqui.
+const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFibWdseGtmY3dsZm55Z2dua2NtIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTIwNDk5NjcsImV4cCI6MjEwNzYyNTk2N30.4gBQsVPqMS2GlIcov-OIohEg4IhTirQjG7LqTU3sz_Y';
 
 let db = null, dbErro = null;
+// Lido antes de o Supabase limpar a URL: indica que a pessoa chegou pelo link de "esqueci a senha"
+const VEIO_DA_RECUPERACAO = /type=recovery/.test(window.location.hash + window.location.search);
 try {
   if (typeof supabase === 'undefined' || !supabase.createClient) {
     dbErro = 'A biblioteca do Supabase não carregou. Verifique sua internet e se o <script> do CDN vem antes deste código.';
   } else {
     db = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+    // Recuperação de senha: quando a pessoa volta pelo link do email,
+    // o Supabase avisa com o evento PASSWORD_RECOVERY e pedimos a nova senha.
+    db.auth.onAuthStateChange((evento) => {
+      if (evento === 'PASSWORD_RECOVERY') setTimeout(definirNovaSenha, 0);
+    });
   }
 } catch (e) { dbErro = 'Falha ao conectar: ' + e.message; }
 
@@ -277,20 +369,23 @@ async function entrar(email, senha) {
   if (error) throw new Error(traduzErro(error.message));
   const { data: u, error: e2 } = await db.from('usuarios')
     .select('nome, perfil').eq('id', data.user.id).single();
-  if (e2) throw new Error('Conta autenticada, mas sem registro na tabela usuarios.');
+  if (e2 || !u) {
+    await db.auth.signOut({ scope: 'local' }); // não deixa uma sessão "sem perfil" aberta
+    throw new Error('Conta autenticada, mas sem perfil cadastrado. Fale com o administrador.');
+  }
   return u;
 }
 
-// ✅ NOVA versão da função cadastrar() — Seção 1 do script
+// O perfil (tabela usuarios) é criado pelo trigger handle_new_user no banco.
 async function cadastrar(nome, perfil, email, senha, extras = {}) {
   exigirDb();
   const { data, error } = await db.auth.signUp({
     email,
-    password: senha,               // ← mantém a correção que já fizemos
-    options: { data: { nome, perfil, ...extras } }  // ← metadados que o trigger lê
+    password: senha,
+    options: { data: { nome, perfil, ...extras } }  // metadados que o trigger lê
   });
   if (error) throw new Error(traduzErro(error.message));
-  // NÃO insere mais na tabela usuarios — o trigger do banco faz isso sozinho
+  return data; // data.session vem preenchida quando "Confirm email" está desligado
 }
 
 async function usuarioAtual() {
@@ -299,14 +394,39 @@ async function usuarioAtual() {
   if (!data.user) return null;
   const { data: u } = await db.from('usuarios')
     .select('nome, perfil').eq('id', data.user.id).single();
+  if (!u) return null;
   return { id: data.user.id, ...u };
 }
 
 function traduzErro(msg) {
+  msg = msg || '';
   if (msg.includes('Invalid login credentials')) return 'Email ou senha incorretos.';
-  if (msg.includes('already registered'))       return 'Este email já está cadastrado.';
-  if (msg.includes('Password should be'))       return 'A senha deve ter no mínimo 6 caracteres.';
+  if (msg.includes('Email not confirmed'))       return 'Confirme seu email antes de entrar (veja sua caixa de entrada).';
+  if (msg.includes('already registered'))        return 'Este email já está cadastrado.';
+  if (msg.includes('Password should be'))        return 'A senha deve ter no mínimo 6 caracteres.';
+  if (msg.includes('valid password'))            return 'Informe uma senha válida.';
+  if (/rate limit|For security purposes/i.test(msg)) return 'Muitas tentativas seguidas. Aguarde alguns minutos e tente de novo.';
+  if (msg.includes('row-level security'))        return 'Você não tem permissão para esta ação.';
+  if (msg.includes('check constraint'))          return 'Algum valor está fora das regras (preço, estoque ou nome).';
   return msg;
+}
+
+/* ---------- "Manter conectado" ----------
+   O Supabase sempre guarda a sessão no navegador. Se a caixa ficar desmarcada,
+   marcamos esta aba; ao abrir o site de novo (aba fechada), a sessão é encerrada. */
+const CHAVE_NAO_MANTER = 'agronexo-nao-manter', CHAVE_ABA = 'agronexo-aba-ativa';
+function guardarPreferenciaSessao(manter) {
+  try {
+    if (manter) localStorage.removeItem(CHAVE_NAO_MANTER);
+    else { localStorage.setItem(CHAVE_NAO_MANTER, '1'); sessionStorage.setItem(CHAVE_ABA, '1'); }
+  } catch (e) { /* navegador sem storage: segue normal */ }
+}
+function sessaoDeveExpirar() {
+  try { return localStorage.getItem(CHAVE_NAO_MANTER) === '1' && !sessionStorage.getItem(CHAVE_ABA); }
+  catch (e) { return false; }
+}
+function limparPreferenciaSessao() {
+  try { localStorage.removeItem(CHAVE_NAO_MANTER); sessionStorage.removeItem(CHAVE_ABA); } catch (e) {}
 }
 
 /* ================================================================
@@ -317,47 +437,69 @@ function aba(qual) {
   document.getElementById('form-cad').classList.toggle('hidden', qual !== 'cad');
   document.getElementById('tab-login').classList.toggle('at', qual === 'login');
   document.getElementById('tab-cad').classList.toggle('at', qual === 'cad');
+  document.getElementById('tab-login').setAttribute('aria-pressed', qual === 'login');
+  document.getElementById('tab-cad').setAttribute('aria-pressed', qual === 'cad');
   limparMsgs();
 }
 function limparMsgs() {
-  document.getElementById('erro').style.display = 'none';
-  document.getElementById('ok').style.display = 'none';
+  document.getElementById('erro').textContent = '';
+  document.getElementById('ok').textContent = '';
 }
-function mostrarErro(msg) { const e = document.getElementById('erro'); e.textContent = msg; e.style.display = 'block'; }
-function mostrarOk(msg)   { const o = document.getElementById('ok');   o.textContent = msg; o.style.display = 'block'; }
+function mostrarErro(msg) { document.getElementById('ok').textContent = ''; document.getElementById('erro').textContent = msg; }
+function mostrarOk(msg)   { document.getElementById('erro').textContent = ''; document.getElementById('ok').textContent = msg; }
 
 function toggleSenha(id, btn) {
   const i = document.getElementById(id);
-  i.type = i.type === 'password' ? 'text' : 'password';
-  btn.textContent = i.type === 'password' ? '👁️' : '🙈';
+  const mostrar = i.type === 'password';
+  i.type = mostrar ? 'text' : 'password';
+  btn.textContent = mostrar ? '🙈' : '👁️';
+  btn.setAttribute('aria-label', mostrar ? 'Ocultar senha' : 'Mostrar senha');
 }
 
-async function fazerLogin() {
+async function fazerLogin(ev) {
+  ev.preventDefault();
   const email = document.getElementById('email').value.trim();
   const senha = document.getElementById('senha').value;
   if (!email || !senha) { mostrarErro('Preencha email e senha'); return; }
   document.getElementById('btn-entrar').disabled = true;
   try {
     await entrar(email, senha);   // valida no banco
+    guardarPreferenciaSessao(document.getElementById('manter').checked);
     await abrirApp();             // sem redirect: troca de tela na hora
   } catch (e) { mostrarErro(e.message); }
   document.getElementById('btn-entrar').disabled = false;
 }
 
 async function esqueciSenha() {
-  const email = prompt('Informe seu email para receber o link de recuperação:');
+  let email = document.getElementById('email').value.trim();
+  if (!email) email = prompt('Informe seu email para receber o link de recuperação:');
   if (!email) return;
   try {
-    await db.auth.resetPasswordForEmail(email);
-    mostrarOk('📧 Link de recuperação enviado! Verifique sua caixa de entrada.');
+    exigirDb();
+    // supabase-js não lança exceção: o erro volta no retorno e precisa ser conferido.
+    const { error } = await db.auth.resetPasswordForEmail(email, {
+      redirectTo: window.location.origin + window.location.pathname
+    });
+    if (error) { mostrarErro('Não foi possível enviar: ' + traduzErro(error.message)); return; }
+    mostrarOk('Link de recuperação enviado! Verifique sua caixa de entrada.');
   } catch (e) { mostrarErro('Não foi possível enviar: ' + e.message); }
 }
 
+async function definirNovaSenha() {
+  const nova = prompt('Digite sua nova senha (mínimo 6 caracteres):');
+  if (!nova) return;
+  if (nova.length < 6) { alert('A senha deve ter no mínimo 6 caracteres.'); return; }
+  const { error } = await db.auth.updateUser({ password: nova });
+  alert(error ? 'Não foi possível trocar a senha: ' + traduzErro(error.message) : 'Senha alterada com sucesso!');
+}
+
 let perfilSel = 'agricultor', etapaAtual = 1;
+const NOMES_ETAPAS = ['Perfil', 'Empresa', 'Endereço', 'Acesso'];
 
 function selPerfil(el, p) {
-  document.querySelectorAll('.pcard').forEach(x => x.classList.remove('sel'));
-  el.classList.add('sel'); perfilSel = p;
+  document.querySelectorAll('.pcard').forEach(x => x.setAttribute('aria-pressed', 'false'));
+  el.setAttribute('aria-pressed', 'true');
+  perfilSel = p;
 }
 function mascCnpj() {
   let v = document.getElementById('c-cnpj').value.replace(/\D/g, '').slice(0, 14);
@@ -366,28 +508,45 @@ function mascCnpj() {
   document.getElementById('c-cnpj').value = v;
 }
 function mascCep() {
-  let v = document.getElementById('c-cep').value.replace(/\D/g, '').slice(0, 8);
+  const campo = document.getElementById('c-cep');
+  let v = campo.value.replace(/\D/g, '').slice(0, 8);
+  const completo = v.length === 8;
   if (v.length > 5) v = v.replace(/^(\d{5})(\d)/, '$1-$2');
-  document.getElementById('c-cep').value = v;
+  campo.value = v;
+  if (completo) viaCep(); // consulta assim que o CEP fica completo
+}
+function liberarEndereco(ids) {
+  ids.forEach(id => { document.getElementById(id).readOnly = false; });
 }
 async function viaCep() {
   const cep = document.getElementById('c-cep').value.replace(/\D/g, '');
   if (cep.length !== 8) return;
+  const log = document.getElementById('c-log'), cid = document.getElementById('c-cid'), uf = document.getElementById('c-uf');
   try {
     const r = await fetch(`https://viacep.com.br/ws/${cep}/json/`);
     const d = await r.json();
-    if (d.erro) { mostrarErro('CEP não encontrado'); return; }
-    document.getElementById('c-log').value = d.logradouro || '';
-    document.getElementById('c-cid').value = d.localidade || '';
-    document.getElementById('c-uf').value = d.uf || '';
+    if (d.erro) {
+      liberarEndereco(['c-log', 'c-cid', 'c-uf']);
+      mostrarErro('CEP não encontrado. Preencha o endereço manualmente.');
+      return;
+    }
+    log.value = d.logradouro || '';
+    cid.value = d.localidade || '';
+    uf.value = d.uf || '';
+    log.readOnly = !!d.logradouro; cid.readOnly = !!d.localidade; uf.readOnly = !!d.uf;
     limparMsgs();
-  } catch (e) { mostrarErro('Falha ao consultar o CEP'); }
+    // Zona rural costuma ter "CEP geral" do município, sem rua: aí a pessoa digita.
+    if (!d.logradouro) { mostrarOk('CEP geral do município: informe o logradouro (rua, sítio, comunidade).'); log.focus(); }
+  } catch (e) {
+    liberarEndereco(['c-log', 'c-cid', 'c-uf']);
+    mostrarErro('Falha ao consultar o CEP. Preencha o endereço manualmente.');
+  }
 }
 function forcaSenha() {
   const s = document.getElementById('c-senha').value;
   const ind = document.getElementById('ind-senha');
   if (!s) { ind.textContent = ''; ind.className = 'ind-senha'; return; }
-  if (s.length >= 6) { ind.textContent = '✅ Senha válida'; ind.className = 'ind-senha ok'; }
+  if (s.length >= 6) { ind.textContent = '✅ Senha válida'; ind.className = 'ind-senha bom'; }
   else { ind.textContent = '⚠️ Falta(m) ' + (6 - s.length) + ' caractere(s)'; ind.className = 'ind-senha falta'; }
 }
 function mostrarEtapa(n) {
@@ -398,22 +557,37 @@ function mostrarEtapa(n) {
   });
   document.getElementById('btn-voltar').style.display = n > 1 ? 'block' : 'none';
   document.getElementById('btn-avancar').textContent = n === 4 ? '✅ Criar conta' : 'Avançar →';
+  document.getElementById('etapa-txt').textContent = `Etapa ${n} de 4: ${NOMES_ETAPAS[n - 1]}`;
+  limparMsgs();
+  const primeiro = document.querySelector('#et' + n + ' input, #et' + n + ' button');
+  if (primeiro && n > 1) primeiro.focus();
 }
-function proximaEtapa() {
+function proximaEtapa(ev) {
+  if (ev) ev.preventDefault();
+  const val = id => document.getElementById(id).value.trim();
   if (etapaAtual === 1) { mostrarEtapa(2); return; }
   if (etapaAtual === 2) {
-    if (!document.getElementById('c-nome').value.trim()) { mostrarErro('Informe seu nome/razão social'); return; }
-    if (document.getElementById('c-cnpj').value.replace(/\D/g, '').length !== 14) { mostrarErro('CNPJ inválido (14 dígitos)'); return; }
+    if (!val('c-nome')) { mostrarErro('Informe seu nome/razão social'); return; }
+    if (val('c-cnpj').replace(/\D/g, '').length !== 14) { mostrarErro('CNPJ inválido (14 dígitos)'); return; }
     mostrarEtapa(3); return;
   }
   if (etapaAtual === 3) {
-    if (document.getElementById('c-cep').value.replace(/\D/g, '').length !== 8) { mostrarErro('Informe um CEP válido'); return; }
-    if (!document.getElementById('c-num').value.trim()) { mostrarErro('Informe o número do endereço'); return; }
+    if (val('c-cep').replace(/\D/g, '').length !== 8) { mostrarErro('Informe um CEP válido'); return; }
+    if (!val('c-log') || !val('c-cid') || !val('c-uf')) { mostrarErro('Complete o endereço (logradouro, cidade e UF)'); return; }
+    if (!val('c-num')) { mostrarErro('Informe o número do endereço (ou S/N)'); return; }
     mostrarEtapa(4); return;
   }
   if (etapaAtual === 4) criarConta();
 }
 function etapaAnterior() { if (etapaAtual > 1) mostrarEtapa(etapaAtual - 1); }
+
+function reiniciarCadastro() {
+  document.getElementById('form-cad').reset();
+  ['c-log', 'c-cid', 'c-uf'].forEach(id => { document.getElementById(id).readOnly = true; });
+  forcaSenha();
+  selPerfil(document.querySelector('.pcard'), 'agricultor');
+  mostrarEtapa(1);
+}
 
 async function criarConta() {
   const nome = document.getElementById('c-nome').value.trim();
@@ -425,18 +599,24 @@ async function criarConta() {
   if (senha !== senha2) { mostrarErro('As senhas não conferem'); return; }
   document.getElementById('btn-avancar').disabled = true;
   try {
-    await cadastrar(nome, perfilSel, email, senha, {
+    const dados = await cadastrar(nome, perfilSel, email, senha, {
       cnpj: document.getElementById('c-cnpj').value,
       inscricao_estadual: document.getElementById('c-ie').value.trim(),
       cep: document.getElementById('c-cep').value,
-      logradouro: document.getElementById('c-log').value,
+      logradouro: document.getElementById('c-log').value.trim(),
       numero: document.getElementById('c-num').value.trim(),
-      cidade: document.getElementById('c-cid').value,
-      uf: document.getElementById('c-uf').value
+      cidade: document.getElementById('c-cid').value.trim(),
+      uf: document.getElementById('c-uf').value.trim().toUpperCase()
     });
-    limparMsgs();
-    mostrarOk('✅ Conta criada com sucesso! Agora faça login.');
-    aba('login');
+    reiniciarCadastro();
+    if (dados.session) {
+      // "Confirm email" desligado: o Supabase já entrega a sessão, então entramos direto.
+      guardarPreferenciaSessao(false);
+      await abrirApp();
+    } else {
+      aba('login');
+      mostrarOk('✅ Conta criada! Confirme pelo link enviado ao seu email e depois faça login.');
+    }
   } catch (e) { mostrarErro(e.message); }
   document.getElementById('btn-avancar').disabled = false;
 }
@@ -444,88 +624,219 @@ async function criarConta() {
 /* ================================================================
    SEÇÃO 3 — DASHBOARD (produtos do banco + tempo real)
 ================================================================ */
-let MEU_USUARIO = null;
+let MEU_USUARIO = null, canalRT = null;
+
+// Escapa texto vindo do banco antes de montar HTML.
+// Sem isso, um produto chamado <img src=x onerror=...> rodaria código na tela de todo mundo (XSS).
+function esc(v) {
+  return String(v ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+}
+function moeda(v) { return Number(v || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }); }
 
 async function abrirApp() {
   MEU_USUARIO = await usuarioAtual();
+  if (!MEU_USUARIO || !MEU_USUARIO.perfil) {
+    await db.auth.signOut({ scope: 'local' });
+    MEU_USUARIO = null;
+    mostrarErro('Sua conta não tem perfil cadastrado. Fale com o administrador.');
+    return;
+  }
+  const agricultor = MEU_USUARIO.perfil === 'agricultor';
   document.getElementById('user-logado').textContent = '👤 ' + MEU_USUARIO.nome + ' (' + MEU_USUARIO.perfil + ')';
-  if (MEU_USUARIO.perfil !== 'agricultor') document.getElementById('btn-novo').style.display = 'none';
+  // Mostra/esconde a cada login (antes, depois de um admin sair, o botão sumia também para o agricultor)
+  document.getElementById('btn-novo').style.display = agricultor ? '' : 'none';
+  document.getElementById('tit-tabela').textContent = agricultor
+    ? 'Meus produtos (dados do banco, atualizados em tempo real)'
+    : 'Produtos disponíveis na plataforma (tempo real)';
+  document.getElementById('lb-receita').textContent = MEU_USUARIO.perfil === 'comprador' ? 'Total em compras' : 'Receita';
   document.getElementById('tela-auth').classList.add('hidden');
   document.getElementById('tela-app').classList.remove('hidden');
+  document.getElementById('conteudo').focus(); // leitor de tela acompanha a troca de tela
   await carregarTudo();
   escutarTempoReal();
 }
 
 async function fazerSair() {
   exigirDb();
-  await db.auth.signOut();
+  pararTempoReal();
+  await db.auth.signOut({ scope: 'local' }); // sai só deste navegador
+  limparPreferenciaSessao();
+  MEU_USUARIO = null;
+  document.getElementById('tabela').innerHTML = '<tr><td colspan="4">Carregando do banco...</td></tr>';
   document.getElementById('tela-app').classList.add('hidden');
   document.getElementById('tela-auth').classList.remove('hidden');
   document.getElementById('senha').value = '';
+  document.getElementById('email').focus();
 }
 
 async function carregarTudo() {
-  const { data: prods, error } = await db.from('produtos').select('*').order('id');
-  if (error) { console.error(error); return; }
-  const { data: peds } = await db.from('pedidos').select('quantidade, status, produto_id');
+  if (!MEU_USUARIO) return;
+  // Agricultor vê só os próprios produtos; comprador e admin veem o catálogo.
+  let consulta = db.from('produtos').select('*').order('id');
+  if (MEU_USUARIO.perfil === 'agricultor') consulta = consulta.eq('agricultor_id', MEU_USUARIO.id);
+  const { data: prods, error } = await consulta;
+  if (error) {
+    console.error(error);
+    document.getElementById('tabela').innerHTML = '<tr><td colspan="4">Não foi possível carregar os produtos.</td></tr>';
+    return;
+  }
+  // select('*') traz preco_unitario (preço do momento da venda, gravado pelo banco)
+  const { data: peds } = await db.from('pedidos').select('*');
   const precoMap = Object.fromEntries(prods.map(p => [p.id, Number(p.preco)]));
-  const receita = (peds || []).filter(p => p.status !== 'cancelado')
-    .reduce((s, p) => s + p.quantidade * (precoMap[p.produto_id] || 0), 0);
+  // Só conta como receita o que foi confirmado ou entregue (pendente ainda não é venda)
+  const receita = (peds || []).filter(p => p.status === 'confirmado' || p.status === 'entregue')
+    .reduce((s, p) => s + p.quantidade * Number(p.preco_unitario ?? precoMap[p.produto_id] ?? 0), 0);
   const alertas = prods.filter(p => p.estoque <= p.estoque_minimo).length;
   document.getElementById('st-produtos').textContent = prods.length;
   document.getElementById('st-pedidos').textContent = (peds || []).length;
-  document.getElementById('st-receita').textContent = 'R$ ' + receita.toFixed(2).replace('.', ',');
+  document.getElementById('st-receita').textContent = moeda(receita);
   document.getElementById('st-alertas').textContent = alertas;
+  renderTabela(prods);
+}
+
+function renderTabela(prods) {
   document.getElementById('tabela').innerHTML = prods.map(p => {
-    const st = p.estoque == 0 ? ['b-o', 'Esgotado'] : p.estoque <= p.estoque_minimo ? ['b-r', 'Estoque baixo'] : ['b-g', 'Em estoque'];
-    return `<tr><td>${p.emoji} ${p.nome}</td><td>R$ ${Number(p.preco).toFixed(2).replace('.', ',')}/${p.unidade}</td><td>${p.estoque} ${p.unidade}</td><td><span class="badge ${st[0]}">${st[1]}</span></td></tr>`;
+    const st = p.estoque <= 0 ? ['b-r', 'Esgotado']
+             : p.estoque <= p.estoque_minimo ? ['b-o', 'Estoque baixo']
+             : ['b-g', 'Em estoque'];
+    return `<tr><td><span aria-hidden="true">${esc(p.emoji)}</span> ${esc(p.nome)}</td>`
+         + `<td>${moeda(p.preco)}/${esc(p.unidade)}</td>`
+         + `<td>${esc(p.estoque)} ${esc(p.unidade)}</td>`
+         + `<td><span class="badge ${st[0]}">${st[1]}</span></td></tr>`;
   }).join('') || '<tr><td colspan="4">Nenhum produto cadastrado ainda.</td></tr>';
 }
 
 function escutarTempoReal() {
-  db.channel('produtos-rt')
+  pararTempoReal(); // evita assinar o mesmo canal duas vezes (login → sair → login)
+  canalRT = db.channel('agronexo-rt')
     .on('postgres_changes', { event: '*', schema: 'public', table: 'produtos' }, carregarTudo)
     .on('postgres_changes', { event: '*', schema: 'public', table: 'pedidos' }, carregarTudo)
     .subscribe();
 }
+function pararTempoReal() {
+  if (canalRT) { db.removeChannel(canalRT); canalRT = null; }
+}
 
-async function salvarProduto() {
+async function salvarProduto(ev) {
+  ev.preventDefault();
+  const erroModal = document.getElementById('erro-modal');
+  erroModal.textContent = '';
   const nome = document.getElementById('p-nome').value.trim();
   const preco = parseFloat(document.getElementById('p-preco').value);
-  const estoque = parseInt(document.getElementById('p-estoque').value);
-  if (!nome || isNaN(preco) || isNaN(estoque)) { alert('Preencha nome, preço e estoque'); return; }
+  const estoque = Number(document.getElementById('p-estoque').value);
+  const minimo = Number(document.getElementById('p-min').value || 5);
+  if (nome.length < 2) { erroModal.textContent = 'Informe o nome do produto.'; return; }
+  if (!(preco > 0)) { erroModal.textContent = 'O preço precisa ser maior que zero.'; return; }
+  if (!Number.isInteger(estoque) || estoque < 0) { erroModal.textContent = 'O estoque precisa ser um número inteiro, zero ou maior.'; return; }
+  if (!Number.isInteger(minimo) || minimo < 0) { erroModal.textContent = 'O estoque mínimo precisa ser um número inteiro, zero ou maior.'; return; }
   document.getElementById('btn-salvar').disabled = true;
   const { error } = await db.from('produtos').insert({
     agricultor_id: MEU_USUARIO.id, nome,
-    emoji: document.getElementById('p-emoji').value || '🌾',
+    emoji: document.getElementById('p-emoji').value.trim() || '🌾',
     preco, estoque,
-    estoque_minimo: parseInt(document.getElementById('p-min').value) || 5,
+    estoque_minimo: minimo,
     unidade: document.getElementById('p-un').value
   });
   document.getElementById('btn-salvar').disabled = false;
-  if (error) { alert('Erro: ' + error.message); return; }
-  fecharModal(); // o tempo real atualiza sozinho
+  if (error) { erroModal.textContent = 'Erro ao salvar: ' + traduzErro(error.message); return; }
+  document.getElementById('form-produto').reset();
+  fecharModal(); // o tempo real atualiza a tabela sozinho
 }
-function abrirModal()  { document.getElementById('modal').classList.remove('hidden'); }
-function fecharModal() { document.getElementById('modal').classList.add('hidden'); }
 
-function nav(el, titulo) {
-  document.querySelectorAll('.ni').forEach(x => x.classList.remove('ac'));
-  el.classList.add('ac');
-  document.getElementById('titulo').innerHTML = titulo;
+let focoAntesDoModal = null;
+function abrirModal() {
+  focoAntesDoModal = document.activeElement;
+  document.getElementById('erro-modal').textContent = '';
+  document.getElementById('modal').classList.remove('hidden');
+  document.getElementById('p-nome').focus();
+}
+function fecharModal() {
+  document.getElementById('modal').classList.add('hidden');
+  if (focoAntesDoModal) focoAntesDoModal.focus();
+}
+// Teclado no modal: Esc fecha; Tab fica preso dentro da janela.
+document.addEventListener('keydown', (e) => {
+  const modal = document.getElementById('modal');
+  if (modal.classList.contains('hidden')) return;
+  if (e.key === 'Escape') { fecharModal(); return; }
+  if (e.key !== 'Tab') return;
+  const focaveis = modal.querySelectorAll('input, select, button');
+  const primeiro = focaveis[0], ultimo = focaveis[focaveis.length - 1];
+  if (e.shiftKey && document.activeElement === primeiro) { e.preventDefault(); ultimo.focus(); }
+  else if (!e.shiftKey && document.activeElement === ultimo) { e.preventDefault(); primeiro.focus(); }
+});
+
+function nav(el) {
+  document.querySelectorAll('.ni').forEach(x => x.removeAttribute('aria-current'));
+  el.setAttribute('aria-current', 'page');
+  document.getElementById('titulo').textContent = el.textContent.trim();
 }
 
 /* ================================================================
-   SEÇÃO 4 — INICIALIZAÇÃO (roda por último)
+   SEÇÃO 4 — ACESSIBILIDADE (fonte, alto contraste, leitura em voz alta)
+================================================================ */
+const CHAVE_ACESS = 'agronexo-acessibilidade';
+let prefs = { fonte: 0, hc: false };
+
+function aplicarPreferencias() {
+  const html = document.documentElement;
+  html.classList.remove('fs-1', 'fs-2', 'fs-3');
+  if (prefs.fonte > 0) html.classList.add('fs-' + prefs.fonte);
+  html.classList.toggle('hc', prefs.hc);
+  document.getElementById('bt-hc').setAttribute('aria-pressed', prefs.hc);
+  try { localStorage.setItem(CHAVE_ACESS, JSON.stringify(prefs)); } catch (e) {}
+}
+function mudarFonte(passo) {
+  prefs.fonte = Math.min(3, Math.max(0, prefs.fonte + passo));
+  aplicarPreferencias();
+}
+function alternarContraste() {
+  prefs.hc = !prefs.hc;
+  aplicarPreferencias();
+}
+
+// Web Speech API: lê o que está na tela agora (modal, dashboard ou login)
+function lerTela() {
+  const bt = document.getElementById('bt-voz');
+  if (!('speechSynthesis' in window)) { alert('Seu navegador não suporta leitura em voz alta.'); return; }
+  if (speechSynthesis.speaking) { speechSynthesis.cancel(); bt.setAttribute('aria-pressed', 'false'); return; }
+  const modalAberto = !document.getElementById('modal').classList.contains('hidden');
+  const appAberto = !document.getElementById('tela-app').classList.contains('hidden');
+  const alvo = modalAberto ? document.querySelector('.modal-caixa')
+             : appAberto ? document.getElementById('conteudo')
+             : document.querySelector('.login-card');
+  const texto = alvo.innerText.replace(/\p{Extended_Pictographic}/gu, '').replace(/\s+/g, ' ').trim();
+  const fala = new SpeechSynthesisUtterance(texto);
+  fala.lang = 'pt-BR';
+  const vozPt = speechSynthesis.getVoices().find(v => (v.lang || '').toLowerCase().startsWith('pt'));
+  if (vozPt) fala.voice = vozPt;
+  fala.onend = fala.onerror = () => bt.setAttribute('aria-pressed', 'false');
+  bt.setAttribute('aria-pressed', 'true');
+  speechSynthesis.speak(fala);
+}
+
+function pularParaConteudo(ev) {
+  ev.preventDefault();
+  const appAberto = !document.getElementById('tela-app').classList.contains('hidden');
+  document.getElementById(appAberto ? 'conteudo' : 'conteudo-auth').focus();
+}
+
+/* ================================================================
+   SEÇÃO 5 — INICIALIZAÇÃO (roda por último)
 ================================================================ */
 (async function init() {
+  try { prefs = Object.assign(prefs, JSON.parse(localStorage.getItem(CHAVE_ACESS) || '{}')); } catch (e) {}
+  aplicarPreferencias();
   if (!db) { mostrarErro(dbErro || 'Banco indisponível.'); return; } // erro visível na tela, não críptico
   const { data } = await db.auth.getSession();
-  if (data.session) await abrirApp(); // já está logado → entra direto no dashboard
+  if (!data.session) return;
+  if (sessaoDeveExpirar() && !VEIO_DA_RECUPERACAO) { // "Manter conectado" desmarcado e a aba foi fechada
+    await db.auth.signOut({ scope: 'local' });
+    limparPreferenciaSessao();
+    return;
+  }
+  await abrirApp(); // já está logado → entra direto no dashboard
 })();
-
-
-
 </script>
 </body>
 </html>
