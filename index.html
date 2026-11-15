@@ -122,7 +122,7 @@ html.hc .pcard[aria-pressed="true"]{border-color:var(--g1)}
 .ni:hover{background:rgba(255,255,255,.12)}
 .ni[aria-current="page"]{background:var(--g3);border-left:4px solid var(--y1);font-weight:600}
 .sb-f{padding:14px 20px;border-top:1px solid rgba(255,255,255,.2);font-size:.78rem}
-.mc{flex:1;margin-left:230px;padding:24px 24px 90px;display:flex;flex-direction:column;gap:20px}
+.mc{flex:1;min-width:0;margin-left:230px;padding:24px 24px 90px;display:flex;flex-direction:column;gap:20px} /* min-width:0: tabela larga rola dentro do card em vez de alargar a página */
 .mc:focus{outline:none}
 .hd{display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:12px}
 .hd h1{font-size:1.4rem}
@@ -199,6 +199,19 @@ html.hc .badge{background:#000;color:#fff}
 html.hc .acao{border:2px solid #fff}
 tr.arquivado td{color:var(--l)}
 td small{display:block;color:var(--l);font-size:.75rem}
+
+/* ===== ESTOQUE ===== */
+.form-mov{padding:16px 20px 20px}
+.form-mov .erro,.form-mov .ok{margin-bottom:12px}
+.grade-mov{display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:4px 16px;align-items:end}
+.grade-mov .field{margin-bottom:10px}
+.rotulo-campo{display:block;font-size:.85rem;font-weight:600;margin-bottom:5px}
+.previa{font-size:.88rem;color:var(--l);margin:2px 0 10px;min-height:1.3em}
+.previa.alerta{color:var(--erro-tx);font-weight:600}
+.btn-mov{width:auto;padding:12px 24px}
+.btn-csv{min-height:42px;padding:8px 14px}
+.quando{white-space:nowrap;font-variant-numeric:tabular-nums}
+.barra-produtos select{width:100%;padding:11px;border:1px solid var(--bdi);border-radius:8px;font-size:.9rem;background:var(--card);color:var(--d)}
 
 /* ===== BARRA DE ACESSIBILIDADE ===== */
 .acess{position:fixed;right:12px;bottom:12px;display:flex;gap:6px;background:var(--card);padding:6px;border-radius:12px;box-shadow:0 4px 16px rgba(0,0,0,.18);border:1px solid var(--bdi);z-index:60}
@@ -433,6 +446,62 @@ html.hc .acess button[aria-pressed="true"]{background:#FFD400;color:#000}
 </div>
 </section>
 
+<!-- ===== TELA: ESTOQUE ===== -->
+<section class="tela hidden" id="tela-estoque" aria-labelledby="titulo">
+<div class="cd">
+<div class="cd-h"><h2 id="tit-mov">Registrar movimentação</h2><p>Entradas e saídas ficam no histórico com o motivo: é isso que separa demanda de desperdício na previsão.</p></div>
+<form class="form-mov" id="form-mov" onsubmit="registrarMovimentacao(event)" novalidate>
+<div class="erro" id="erro-mov" role="alert"></div>
+<div class="ok" id="ok-mov" role="status"></div>
+<div class="grade-mov">
+<div class="field"><label for="m-produto">Produto</label><select id="m-produto" onchange="previaMov()"></select></div>
+<div class="field"><span class="rotulo-campo" id="lb-operacao">Operação</span>
+<div class="filtros" id="m-operacao" role="group" aria-labelledby="lb-operacao">
+<button type="button" data-op="entrada" aria-pressed="true">+ Entrada</button>
+<button type="button" data-op="saida" aria-pressed="false">− Saída</button>
+<button type="button" data-op="contagem" aria-pressed="false">Contagem</button>
+</div></div>
+<div class="field"><label for="m-qtd" id="lb-qtd">Quantidade que entrou</label><input id="m-qtd" type="number" min="0" step="1" inputmode="numeric" oninput="previaMov()"></div>
+<div class="field" id="campo-motivo"><label for="m-motivo">Motivo</label><select id="m-motivo"></select></div>
+</div>
+<p class="previa" id="previa-mov" aria-live="polite"></p>
+<button type="submit" class="btn btn-mov" id="btn-mov">Registrar entrada</button>
+</form>
+</div>
+
+<div class="barra-produtos">
+<div class="filtros" id="filtros-estoque" role="group" aria-label="Período do histórico">
+<span class="rotulo" aria-hidden="true">Período:</span>
+<button type="button" data-dias="7" aria-pressed="false">7 dias</button>
+<button type="button" data-dias="30" aria-pressed="true">30 dias</button>
+<button type="button" data-dias="90" aria-pressed="false">90 dias</button>
+</div>
+<div class="field"><label for="h-produto">Produto</label><select id="h-produto" onchange="renderEstoque()"><option value="">Todos os produtos</option></select></div>
+<button type="button" class="acao btn-csv" onclick="baixarCsv()"><span aria-hidden="true">⬇</span> Baixar histórico (CSV)</button>
+</div>
+<div class="aviso" id="aviso-estoque" role="status"></div>
+
+<div class="cd">
+<div class="cd-h"><h2 id="tit-resumo">Resumo do período por produto</h2><p id="sub-resumo">Para onde foi o que entrou: venda, perda ou outras saídas</p></div>
+<div class="tabela-wrap">
+<table aria-labelledby="tit-resumo">
+<thead><tr><th scope="col">Produto</th><th scope="col" class="num">Entrou</th><th scope="col" class="num">Vendido no app</th><th scope="col" class="num">Vendido fora</th><th scope="col" class="num">Perdido</th><th scope="col" class="num">Outras saídas</th><th scope="col" class="num">% perdido</th><th scope="col" class="num">Estoque atual</th></tr></thead>
+<tbody id="tabela-resumo"></tbody>
+</table>
+</div>
+</div>
+
+<div class="cd">
+<div class="cd-h"><h2 id="tit-historico">Histórico de movimentações</h2><p id="sub-historico">Do mais recente para o mais antigo</p></div>
+<div class="tabela-wrap">
+<table aria-labelledby="tit-historico">
+<thead><tr><th scope="col">Quando</th><th scope="col">Produto</th><th scope="col">Movimento</th><th scope="col" class="num">Quantidade</th><th scope="col" class="num">Estoque depois</th></tr></thead>
+<tbody id="tabela-historico"></tbody>
+</table>
+</div>
+</div>
+</section>
+
 <!-- ===== TELAS AINDA NÃO CONSTRUÍDAS ===== -->
 <section class="tela hidden" id="tela-em-breve" aria-labelledby="titulo">
 <div class="em-breve"><strong id="em-breve-titulo">Em construção</strong>Esta tela entra na próxima etapa do cronograma.</div>
@@ -542,6 +611,7 @@ function traduzErro(msg) {
   if (msg.includes('check constraint'))          return 'Algum valor está fora das regras (preço, estoque ou nome).';
   if (/ativo/.test(msg) && /column/i.test(msg))  return 'Para arquivar produtos, rode o script 02-historico-dashboard.sql no Supabase.';
   if (msg.includes('foreign key'))               return 'Este produto já tem pedidos e não pode ser apagado. Use "Arquivar".';
+  if (/ajustar_estoque/.test(msg))               return 'Para registrar movimentações, rode o script 03-estoque.sql no Supabase.';
   return msg;
 }
 
@@ -788,7 +858,8 @@ const MENUS = {
     { id: 'relatorios', ic: '📈', nome: 'Relatórios' }
   ]
 };
-const TELAS_PRONTAS = ['dashboard', 'produtos'];
+const TELAS_PRONTAS = ['dashboard', 'produtos', 'estoque'];
+let TELA_ATUAL = 'dashboard';
 
 function itensDoMenu() { return MENUS[MEU_USUARIO.perfil] || MENUS.agricultor; }
 
@@ -816,12 +887,15 @@ function irPara(tela) {
     else b.removeAttribute('aria-current');
   });
   document.getElementById('titulo').textContent = item.nome;
+  TELA_ATUAL = item.id;
   const pronta = TELAS_PRONTAS.includes(item.id);
   document.getElementById('tela-dashboard').classList.toggle('hidden', item.id !== 'dashboard');
   document.getElementById('tela-produtos').classList.toggle('hidden', item.id !== 'produtos');
+  document.getElementById('tela-estoque').classList.toggle('hidden', item.id !== 'estoque');
   document.getElementById('tela-em-breve').classList.toggle('hidden', pronta);
   if (!pronta) document.getElementById('em-breve-titulo').textContent = item.nome + ': em construção';
   if (item.id === 'dashboard' && PAINEL.grafico) PAINEL.grafico.resize(); // canvas estava escondido
+  if (item.id === 'estoque' && MEU_USUARIO) carregarEstoque();          // histórico só é buscado quando a tela abre
 }
 
 async function abrirApp() {
@@ -840,6 +914,7 @@ async function abrirApp() {
   montarMenu();
   configurarPainel();
   configurarProdutos();
+  configurarEstoque();
   document.getElementById('tela-auth').classList.add('hidden');
   document.getElementById('tela-app').classList.remove('hidden');
   irPara('dashboard');
@@ -867,11 +942,16 @@ async function fazerSair() {
 // até os dados novos chegarem: nada "pisca" quando o tempo real dispara.
 async function carregarTudo() {
   if (!MEU_USUARIO) return;
-  const secoes = document.querySelectorAll('#tela-dashboard, #tela-produtos');
+  const secoes = document.querySelectorAll('#tela-dashboard, #tela-produtos, #tela-estoque');
   secoes.forEach(s => s.classList.add('atualizando'));
   try {
-    const [, dadosPainel] = await Promise.all([carregarProdutos(), buscarDadosPainel()]);
+    const [, dadosPainel, dadosEstoque] = await Promise.all([
+      carregarProdutos(),
+      buscarDadosPainel(),
+      TELA_ATUAL === 'estoque' ? buscarEstoque() : Promise.resolve(null)
+    ]);
     if (MEU_USUARIO) renderPainel(dadosPainel);
+    if (MEU_USUARIO && dadosEstoque) aplicarEstoque(dadosEstoque);
   } catch (e) {
     console.error(e);
     document.getElementById('aviso-dash').textContent = 'Não foi possível atualizar o painel agora. Verifique a conexão.';
@@ -917,6 +997,7 @@ async function carregarProdutos() {
     if (x.status === 'pendente') c.pendentes++;
   });
   renderTabela();
+  atualizarSelectsEstoque();
 }
 
 // Cabeçalho da tabela muda conforme o perfil (chamado no login)
@@ -1040,6 +1121,284 @@ async function excluirProduto(id) {
   agendarRecarga();
 }
 
+/* ================================================================
+   SEÇÃO 3C — ESTOQUE (movimentações com motivo, resumo e histórico)
+   Os ajustes passam pela função ajustar_estoque do banco (script 03):
+   a conta "estoque ± quantidade" acontece lá dentro, numa instrução só,
+   então nunca atropela uma venda confirmada no mesmo instante.
+================================================================ */
+const ESTOQUE = { dias: 30, mov: [], erro: null, op: 'entrada' };
+const MOTIVOS = {
+  colheita:   'Colheita / produção',
+  compra:     'Compra de terceiros',
+  perda:      'Perda: estragou ou venceu',
+  venda_fora: 'Venda fora do app: feira ou balcão',
+  doacao:     'Doação',
+  consumo:    'Consumo próprio',
+  correcao:   'Correção de lançamento',
+  contagem:   'Contagem de estoque'
+};
+const MOTIVOS_POR_OPERACAO = {
+  entrada:  ['colheita', 'compra', 'correcao'],
+  saida:    ['perda', 'venda_fora', 'doacao', 'consumo', 'correcao'],
+  contagem: []
+};
+const TEXTO_OPERACAO = {
+  entrada:  { rotulo: 'Quantidade que entrou', botao: 'Registrar entrada' },
+  saida:    { rotulo: 'Quantidade que saiu', botao: 'Registrar saída' },
+  contagem: { rotulo: 'Quantidade contada (o que existe de fato)', botao: 'Acertar estoque' }
+};
+
+function configurarEstoque() {
+  ESTOQUE.mov = [];
+  ESTOQUE.erro = null;
+  document.getElementById('erro-mov').textContent = '';
+  document.getElementById('ok-mov').textContent = '';
+  document.getElementById('m-qtd').value = '';
+  escolherOperacao('entrada');
+}
+
+function escolherOperacao(op) {
+  ESTOQUE.op = op;
+  document.querySelectorAll('#m-operacao button').forEach(b => b.setAttribute('aria-pressed', b.dataset.op === op));
+  document.getElementById('lb-qtd').textContent = TEXTO_OPERACAO[op].rotulo;
+  document.getElementById('btn-mov').textContent = TEXTO_OPERACAO[op].botao;
+  const motivo = document.getElementById('m-motivo');
+  motivo.innerHTML = '';
+  motivo.add(new Option('Escolha o motivo…', ''));
+  MOTIVOS_POR_OPERACAO[op].forEach(m => motivo.add(new Option(MOTIVOS[m], m)));
+  document.getElementById('campo-motivo').classList.toggle('hidden', op === 'contagem');
+  previaMov();
+}
+
+// Listas de produtos do formulário e do filtro (Option() usa texto puro: nomes do banco não viram HTML)
+function atualizarSelectsEstoque() {
+  const sel = document.getElementById('m-produto');
+  const antes = sel.value;
+  sel.innerHTML = '';
+  const ativos = PRODUTOS.filter(p => p.ativo !== false);
+  if (!ativos.length) sel.add(new Option('Nenhum produto ativo', ''));
+  ativos.forEach(p => sel.add(new Option(`${p.nome} (${numero(p.estoque)} ${p.unidade})`, p.id)));
+  if ([...sel.options].some(o => o.value === antes)) sel.value = antes;
+
+  // Filtro do histórico: produtos atuais + os que só existem no histórico (excluídos)
+  const filtro = document.getElementById('h-produto');
+  const antesFiltro = filtro.value;
+  const nomes = new Map(PRODUTOS.map(p => [String(p.id), p.nome]));
+  ESTOQUE.mov.forEach(m => {
+    if (m.produto_id != null && !nomes.has(String(m.produto_id))) nomes.set(String(m.produto_id), m.produto_nome + ' (excluído)');
+  });
+  filtro.innerHTML = '';
+  filtro.add(new Option('Todos os produtos', ''));
+  [...nomes.entries()].sort((a, b) => a[1].localeCompare(b[1], 'pt-BR')).forEach(([id, nome]) => filtro.add(new Option(nome, id)));
+  if ([...filtro.options].some(o => o.value === antesFiltro)) filtro.value = antesFiltro;
+  previaMov();
+}
+
+// Mostra como o estoque vai ficar antes de confirmar
+function previaMov() {
+  const el = document.getElementById('previa-mov');
+  const p = PRODUTOS.find(x => String(x.id) === document.getElementById('m-produto').value);
+  const bruto = document.getElementById('m-qtd').value;
+  el.className = 'previa';
+  if (!p) { el.textContent = ''; return; }
+  if (bruto === '') { el.textContent = `Estoque atual de ${p.nome}: ${numero(p.estoque)} ${p.unidade}`; return; }
+  const q = Number(bruto);
+  const novo = ESTOQUE.op === 'entrada' ? p.estoque + q : ESTOQUE.op === 'saida' ? p.estoque - q : q;
+  if (ESTOQUE.op === 'saida' && novo < 0) {
+    el.className = 'previa alerta';
+    el.textContent = `Saída maior que o estoque: ${p.nome} tem ${numero(p.estoque)} ${p.unidade}.`;
+    return;
+  }
+  el.textContent = `${p.nome}: ${numero(p.estoque)} ${p.unidade} → ficará ${numero(novo)} ${p.unidade}`;
+}
+
+async function registrarMovimentacao(ev) {
+  ev.preventDefault();
+  const erro = document.getElementById('erro-mov'), ok = document.getElementById('ok-mov');
+  erro.textContent = '';
+  ok.textContent = '';
+  const op = ESTOQUE.op;
+  const p = PRODUTOS.find(x => String(x.id) === document.getElementById('m-produto').value);
+  const bruto = document.getElementById('m-qtd').value;
+  const q = Number(bruto);
+  const motivo = document.getElementById('m-motivo').value;
+  if (!p) { erro.textContent = 'Escolha o produto.'; return; }
+  if (bruto === '' || !Number.isInteger(q) || q < 0 || (op !== 'contagem' && q === 0)) {
+    erro.textContent = op === 'contagem' ? 'Informe a quantidade contada (número inteiro, zero ou maior).'
+                                         : 'Informe uma quantidade inteira maior que zero.';
+    document.getElementById('m-qtd').focus();
+    return;
+  }
+  if (op !== 'contagem' && !motivo) { erro.textContent = 'Escolha o motivo.'; document.getElementById('m-motivo').focus(); return; }
+  if (op === 'saida' && q > p.estoque) { erro.textContent = `Saída maior que o estoque (${numero(p.estoque)} ${p.unidade}).`; return; }
+
+  const bt = document.getElementById('btn-mov');
+  bt.disabled = true;
+  const { data: novo, error } = await db.rpc('ajustar_estoque', {
+    p_produto: p.id, p_operacao: op, p_quantidade: q, p_motivo: op === 'contagem' ? null : motivo
+  });
+  bt.disabled = false;
+  if (error) { erro.textContent = traduzErro(error.message); return; }
+
+  if (op === 'contagem') {
+    ok.textContent = novo === p.estoque
+      ? `Contagem confere: ${p.nome} continua com ${numero(novo)} ${p.unidade}.`
+      : `Estoque de ${p.nome} acertado pela contagem: agora ${numero(novo)} ${p.unidade} (antes ${numero(p.estoque)}).`;
+  } else {
+    ok.textContent = `Registrado: ${op === 'entrada' ? '+' : '−'}${numero(q)} ${p.unidade} de ${p.nome} (${MOTIVOS[motivo]}). `
+                   + `Estoque agora: ${numero(novo)} ${p.unidade}.`;
+  }
+  document.getElementById('m-qtd').value = '';
+  agendarRecarga();
+}
+
+async function buscarEstoque() {
+  const inicio = somaDias(hojeISO(), -(ESTOQUE.dias - 1));
+  // Meia-noite de Brasília (UTC−3; o Brasil não tem horário de verão desde 2019)
+  return db.from('movimentacoes_estoque').select('*')
+    .gte('criado_em', inicio + 'T00:00:00-03:00')
+    .order('criado_em', { ascending: false })
+    .limit(1000);
+}
+function aplicarEstoque(res) {
+  ESTOQUE.mov = (res && res.data) || [];
+  ESTOQUE.erro = (res && res.error) || null;
+  atualizarSelectsEstoque();
+  renderEstoque();
+}
+async function carregarEstoque() { aplicarEstoque(await buscarEstoque()); }
+
+function movimentosFiltrados() {
+  const filtro = document.getElementById('h-produto').value;
+  return ESTOQUE.mov.filter(m => !filtro || String(m.produto_id) === filtro);
+}
+
+function renderEstoque() {
+  document.getElementById('aviso-estoque').textContent = ESTOQUE.erro
+    ? 'O histórico de estoque ainda não está ativo no banco: rode os scripts 02 e 03 no Supabase.' : '';
+  const lista = movimentosFiltrados();
+  renderResumoEstoque(lista);
+  renderHistorico(lista);
+}
+
+// Soma, por produto, para onde foi o que entrou (cada linha tem uma unidade só)
+function resumirMovimentos(lista) {
+  const grupos = new Map();
+  lista.forEach(m => {
+    const chave = m.produto_id != null ? String(m.produto_id) : 'nome:' + m.produto_nome;
+    if (!grupos.has(chave)) grupos.set(chave, { id: m.produto_id, nome: m.produto_nome, unidade: m.unidade || '', entrou: 0, app: 0, fora: 0, perdido: 0, outras: 0 });
+    const g = grupos.get(chave), q = Number(m.quantidade);
+    if (m.tipo === 'cadastro' || m.tipo === 'entrada') g.entrou += Math.max(0, q);
+    else if (m.tipo === 'venda')        g.app += -q;
+    else if (m.tipo === 'cancelamento') g.app -= q;
+    else if (m.tipo === 'ajuste') {
+      if (m.motivo === 'perda')           g.perdido += -q;
+      else if (m.motivo === 'venda_fora') g.fora += -q;
+      else                                g.outras += -q;
+    } else if (m.tipo === 'exclusao')   g.outras += -q;
+    // saldo_inicial, arquivado e reativado não são entrada nem saída
+  });
+  return [...grupos.values()];
+}
+
+function renderResumoEstoque(lista) {
+  const corpo = document.getElementById('tabela-resumo');
+  const grupos = resumirMovimentos(lista)
+    .filter(g => g.entrou || g.app || g.fora || g.perdido || g.outras)
+    .map(g => ({ ...g, atual: PRODUTOS.find(p => p.id === g.id) }))
+    .sort((a, b) => (a.atual ? a.atual.nome : a.nome).localeCompare(b.atual ? b.atual.nome : b.nome, 'pt-BR'));
+  let perdasEmReais = 0;
+  if (!grupos.length) {
+    corpo.innerHTML = '<tr><td colspan="8">Nenhuma entrada ou saída neste período.</td></tr>';
+  } else {
+    corpo.innerHTML = grupos.map(g => {
+      if (g.atual) perdasEmReais += g.perdido * Number(g.atual.preco);
+      const vendidoApp = Math.max(0, g.app);   // negativo = cancelamento de venda feita antes do período
+      const saiu = vendidoApp + g.fora + g.perdido + g.outras;
+      const u = esc(g.unidade);
+      const qtd = v => (v ? `${numero(v)} ${u}` : '—');
+      const app = g.app < 0 ? `—<small>${numero(-g.app)} ${u} devolvido</small>` : qtd(g.app);
+      return `<tr><td>${esc(g.atual ? g.atual.nome : g.nome)}${g.atual ? '' : '<small>excluído</small>'}</td>`
+           + `<td class="num">${qtd(g.entrou)}</td><td class="num">${app}</td><td class="num">${qtd(g.fora)}</td>`
+           + `<td class="num">${qtd(g.perdido)}</td><td class="num">${qtd(g.outras)}</td>`
+           + `<td class="num">${saiu > 0 ? numero(g.perdido / saiu * 100) + '%' : '—'}</td>`
+           + `<td class="num">${g.atual ? numero(g.atual.estoque) + ' ' + u : '—'}</td></tr>`;
+    }).join('');
+  }
+  document.getElementById('sub-resumo').textContent =
+    `Últimos ${ESTOQUE.dias} dias · % perdido = perdas ÷ tudo o que saiu`
+    + (perdasEmReais > 0 ? ` · Perdas estimadas: ${moeda(perdasEmReais)} (pelo preço atual)` : '');
+}
+
+function descricaoMovimento(m) {
+  switch (m.tipo) {
+    case 'venda':         return `Venda no app (pedido #${m.pedido_id})`;
+    case 'cancelamento':  return `Pedido #${m.pedido_id} cancelado: estoque devolvido`;
+    case 'entrada':       return m.motivo ? (MOTIVOS[m.motivo] || m.motivo) : 'Reposição (pela edição do produto)';
+    case 'ajuste':        return m.motivo ? (MOTIVOS[m.motivo] || m.motivo) : 'Saída sem motivo (pela edição do produto)';
+    case 'cadastro':      return 'Cadastro do produto';
+    case 'saldo_inicial': return 'Saldo inicial do histórico';
+    case 'arquivado':     return 'Arquivado (saiu da vitrine)';
+    case 'reativado':     return 'Reativado (voltou à vitrine)';
+    case 'exclusao':      return 'Produto excluído';
+    default:              return m.tipo;
+  }
+}
+function dataHora(iso) {
+  return new Date(iso).toLocaleString('pt-BR', { timeZone: TZ, day: '2-digit', month: '2-digit', year: '2-digit', hour: '2-digit', minute: '2-digit' });
+}
+
+function renderHistorico(lista) {
+  const corpo = document.getElementById('tabela-historico');
+  const LIMITE = 300;
+  document.getElementById('sub-historico').textContent = lista.length > LIMITE
+    ? `Mostrando os ${LIMITE} mais recentes de ${lista.length} (o CSV traz todos)`
+    : `${lista.length} registro${lista.length === 1 ? '' : 's'} · do mais recente para o mais antigo`;
+  if (!lista.length) { corpo.innerHTML = '<tr><td colspan="5">Nenhuma movimentação neste período.</td></tr>'; return; }
+  corpo.innerHTML = lista.slice(0, LIMITE).map(m => {
+    const q = Number(m.quantidade), u = esc(m.unidade || '');
+    const qtd = q === 0 ? '—' : `${q > 0 ? '+' : '−'}${numero(Math.abs(q))} ${u}`;
+    return `<tr><td class="quando">${dataHora(m.criado_em)}</td><td>${esc(m.produto_nome)}</td>`
+         + `<td>${esc(descricaoMovimento(m))}</td><td class="num">${qtd}</td>`
+         + `<td class="num">${numero(m.estoque_apos)} ${u}</td></tr>`;
+  }).join('');
+}
+
+// CSV para Excel em português: separador ";" e BOM para os acentos abrirem certo
+function baixarCsv() {
+  const lista = movimentosFiltrados();
+  if (!lista.length) { document.getElementById('aviso-estoque').textContent = 'Não há movimentações para exportar neste filtro.'; return; }
+  // Texto começando com = + - @ vira fórmula no Excel: um apóstrofo na frente impede isso
+  const texto = v => { let s = String(v ?? ''); if (/^[=+\-@]/.test(s)) s = "'" + s; return '"' + s.replace(/"/g, '""') + '"'; };
+  const quando = iso => new Intl.DateTimeFormat('sv-SE', { timeZone: TZ, year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' }).format(new Date(iso));
+  const linhas = ['data_hora;produto;tipo;motivo;quantidade;unidade;estoque_depois;pedido'];
+  lista.slice().reverse().forEach(m => linhas.push([
+    texto(quando(m.criado_em)), texto(m.produto_nome), texto(m.tipo), texto(m.motivo || ''),
+    m.quantidade, texto(m.unidade || ''), m.estoque_apos, m.pedido_id ?? ''
+  ].join(';')));
+  const blob = new Blob(['﻿' + linhas.join('\r\n')], { type: 'text/csv;charset=utf-8' });
+  const link = document.createElement('a');
+  link.href = URL.createObjectURL(blob);
+  link.download = `agronexo-estoque-${hojeISO()}-${ESTOQUE.dias}dias.csv`;
+  document.body.appendChild(link);
+  link.click();
+  link.remove();
+  setTimeout(() => URL.revokeObjectURL(link.href), 1000);
+}
+
+document.getElementById('m-operacao').addEventListener('click', (e) => {
+  const bt = e.target.closest('button[data-op]');
+  if (bt) escolherOperacao(bt.dataset.op);
+});
+document.getElementById('filtros-estoque').addEventListener('click', (e) => {
+  const bt = e.target.closest('button[data-dias]');
+  if (!bt) return;
+  ESTOQUE.dias = Number(bt.dataset.dias);
+  document.querySelectorAll('#filtros-estoque button').forEach(x => x.setAttribute('aria-pressed', x === bt));
+  carregarEstoque();
+});
+
 /* ---------- Tempo real ----------
    Uma confirmação de pedido gera 3 eventos seguidos (pedido, produto e histórico);
    esperamos 400 ms e recarregamos uma vez só. */
@@ -1135,7 +1494,8 @@ function abrirModal(id) {
   document.getElementById('modal-titulo-texto').textContent = p ? 'Editar produto' : 'Cadastrar Novo Produto';
   document.getElementById('btn-salvar').textContent = p ? 'Salvar alterações' : 'Salvar no banco';
   document.getElementById('dica-preco').textContent = p ? 'Pedidos já feitos mantêm o preço da época' : '';
-  document.getElementById('dica-estoque').textContent = p ? 'Aumentar conta como reposição; diminuir, como perda ou ajuste' : '';
+  document.getElementById('dica-estoque').textContent = p
+    ? 'Para registrar o motivo (perda, venda na feira, doação...), use a tela Estoque' : '';
   if (p) {
     document.getElementById('p-nome').value = p.nome;
     document.getElementById('p-emoji').value = p.emoji || '';
