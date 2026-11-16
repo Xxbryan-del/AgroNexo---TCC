@@ -341,6 +341,24 @@ tr.previsto td{color:var(--l)}
 }
 .barra-produtos select{width:100%;padding:11px;border:1px solid var(--bdi);border-radius:8px;font-size:.9rem;background:var(--card);color:var(--d)}
 
+/* ===== CATÁLOGO ===== */
+#bt-catalogo{margin:-4px 0 12px;min-height:40px}
+.painel-catalogo{border:1px solid var(--bd);border-radius:8px;padding:12px;margin:-4px 0 14px}
+.painel-catalogo input{width:100%;padding:9px;border:1px solid var(--bdi);border-radius:8px;font-size:.9rem;background:var(--card);color:var(--d)}
+.itens-catalogo{max-height:280px;overflow-y:auto;margin-top:6px}
+.itens-catalogo h3{font-size:.75rem;color:var(--l);text-transform:uppercase;letter-spacing:.03em;margin:12px 0 6px}
+.grade-catalogo{display:flex;flex-wrap:wrap;gap:6px}
+.grade-catalogo button{min-height:36px;padding:6px 12px;border:1px solid var(--bdi);border-radius:18px;background:var(--card);color:var(--d);font-size:.82rem;cursor:pointer}
+.grade-catalogo button:hover{border-color:var(--g2)}
+.grade-catalogo .ja{color:var(--verde-tx);font-size:.72rem;font-weight:600}
+.sem-oferta{margin-top:16px}
+.sem-oferta summary{padding:14px 20px;cursor:pointer;font-weight:600;font-size:.9rem}
+.sem-oferta .obs{padding:0 20px 10px}
+.lista-sem-oferta{list-style:none;display:flex;flex-wrap:wrap;gap:6px;padding:0 20px 16px}
+.lista-sem-oferta li{border:1px dashed var(--bdi);border-radius:18px;padding:5px 12px;font-size:.82rem}
+.lista-sem-oferta small{color:var(--l);margin-left:4px}
+html.hc :is(.grade-catalogo button,.lista-sem-oferta li,.painel-catalogo){border:2px solid #fff}
+
 /* ===== BARRA DE ACESSIBILIDADE ===== */
 .acess{position:fixed;right:12px;bottom:12px;display:flex;gap:6px;background:var(--card);padding:6px;border-radius:12px;box-shadow:0 4px 16px rgba(0,0,0,.18);border:1px solid var(--bdi);z-index:60}
 .acess button{min-width:44px;min-height:44px;padding:0 10px;border:1px solid var(--bdi);border-radius:8px;background:var(--card);color:var(--d);font-weight:700;font-size:.85rem;cursor:pointer}
@@ -656,6 +674,14 @@ html.hc .acess button[aria-pressed="true"]{background:#FFD400;color:#000}
 <div>
 <p class="contagem-loja" id="contagem-loja" aria-live="polite"></p>
 <div class="vitrine" id="vitrine"></div>
+<!-- Itens do catálogo que ninguém vende agora: o comprador vê tudo o que a plataforma conhece -->
+<div class="cd sem-oferta hidden" id="sem-oferta">
+<details id="det-sem-oferta">
+<summary id="tit-sem-oferta">Sem produtor vendendo agora</summary>
+<p class="obs">Itens do catálogo que nenhum produtor está vendendo no momento.</p>
+<ul class="lista-sem-oferta" id="lista-sem-oferta"></ul>
+</details>
+</div>
 </div>
 <aside class="cd carrinho" aria-labelledby="tit-carrinho">
 <div class="cd-h"><h2 id="tit-carrinho" tabindex="-1">Carrinho</h2><p id="sub-carrinho">Vazio: adicione produtos da vitrine</p></div>
@@ -856,6 +882,12 @@ html.hc .acess button[aria-pressed="true"]{background:#FFD400;color:#000}
 <input id="p-nome" maxlength="80" placeholder="Ex.: Tomate, Cupuaçu, Macaxeira" list="lista-catalogo" autocomplete="off" oninput="nomeDigitado()" aria-describedby="info-catalogo">
 <datalist id="lista-catalogo"></datalist>
 <span class="dica" id="info-catalogo" aria-live="polite"></span></div>
+<button type="button" class="acao hidden" id="bt-catalogo" aria-expanded="false" aria-controls="painel-catalogo" onclick="alternarPainelCatalogo()"><span aria-hidden="true">📋</span> Escolher do catálogo</button>
+<div class="painel-catalogo hidden" id="painel-catalogo">
+<label for="busca-catalogo" class="rotulo-campo">Buscar no catálogo <span class="dica">sem acento também vale: acai, maracuja</span></label>
+<input type="search" id="busca-catalogo" placeholder="Ex.: banana, macaxeira, verduras" autocomplete="off" oninput="renderPainelCatalogo()">
+<div class="itens-catalogo" id="itens-catalogo"></div>
+</div>
 <div class="field" id="campo-categoria"><label for="p-cat">Categoria</label><select id="p-cat"><option value="frutas">Frutas</option><option value="legumes">Legumes</option><option value="verduras">Verduras</option><option value="raizes">Raízes, tubérculos e bulbos</option><option value="temperos">Temperos e ervas</option><option value="outros" selected>Outros</option></select></div>
 <div class="field"><label for="p-emoji">Emoji</label><input id="p-emoji" maxlength="4" placeholder="🌾"></div>
 <div class="field"><label for="p-preco">Preço (R$) <span class="dica" id="dica-preco"></span></label><input id="p-preco" type="number" step="0.01" min="0.01" placeholder="6.50"></div>
@@ -1505,7 +1537,8 @@ function normalizarNome(t) { return semAcento(t).replace(/[-_]+/g, ' ').replace(
 async function carregarCatalogo() {
   const { data, error } = await db.from('catalogo').select('id, nome, categoria, emoji, unidade, sinonimos').order('nome');
   CATALOGO_ATIVO = !error;   // sem o script 09, o cadastro continua como antes
-  CATALOGO = (data || []).map(c => ({ ...c, chaves: [c.nome, ...(c.sinonimos || [])].map(normalizarNome) }));
+  CATALOGO = (data || []).map(c => ({ ...c, chaves: [c.nome, ...(c.sinonimos || [])].map(normalizarNome) }))
+    .sort((a, b) => a.nome.localeCompare(b.nome, 'pt-BR'));   // ordem do português: Açaí antes de Araçá
   // Sugestões do campo Nome: cada item e cada nome regional (que aponta para o item)
   const lista = document.getElementById('lista-catalogo');
   lista.innerHTML = '';
@@ -1522,8 +1555,68 @@ async function carregarCatalogo() {
     });
   });
   document.getElementById('campo-categoria').classList.toggle('hidden', !CATALOGO_ATIVO);
+  document.getElementById('bt-catalogo').classList.toggle('hidden', !CATALOGO_ATIVO || !CATALOGO.length);
   if (MEU_USUARIO) { renderTabela(); renderLoja(); }
 }
+
+// Itens que combinam com a busca (sem acento; nome, nome regional ou categoria)
+function itensDoCatalogoPorBusca(texto, categoria = '') {
+  const termo = normalizarNome(texto);
+  return CATALOGO.filter(c => (!categoria || c.categoria === categoria)
+    && (!termo || c.chaves.some(k => k.includes(termo)) || normalizarNome(CATEGORIAS[c.categoria]).includes(termo)));
+}
+
+/* ---------- Painel "Escolher do catálogo" (cadastro de produto) ----------
+   A lista do navegador (datalist) não ignora acentos e quase some no celular;
+   este painel mostra os itens por categoria e busca sem acento. */
+function alternarPainelCatalogo(abrir) {
+  const painel = document.getElementById('painel-catalogo'), bt = document.getElementById('bt-catalogo');
+  const mostrar = abrir ?? painel.classList.contains('hidden');
+  painel.classList.toggle('hidden', !mostrar);
+  bt.setAttribute('aria-expanded', mostrar);
+  if (mostrar) {
+    document.getElementById('busca-catalogo').value = '';
+    renderPainelCatalogo();
+    document.getElementById('busca-catalogo').focus();
+  }
+}
+function renderPainelCatalogo() {
+  const area = document.getElementById('itens-catalogo');
+  const itens = itensDoCatalogoPorBusca(document.getElementById('busca-catalogo').value);
+  if (!itens.length) {
+    area.innerHTML = '<p class="obs">Nada com esse nome no catálogo. Pode cadastrar mesmo assim, com o nome que quiser.</p>';
+    return;
+  }
+  // Itens que o agricultor já vende ficam marcados (ele pode cadastrar outra variedade)
+  const jaVende = new Set(PRODUTOS.filter(p => p.ativo !== false && p.catalogo_id).map(p => p.catalogo_id));
+  area.innerHTML = Object.keys(CATEGORIAS).map(cat => {
+    const daCat = itens.filter(c => c.categoria === cat);
+    if (!daCat.length) return '';
+    return `<h3>${esc(CATEGORIAS[cat])} (${daCat.length})</h3><div class="grade-catalogo">`
+      + daCat.map(c => `<button type="button" data-item="${c.id}"><span aria-hidden="true">${esc(c.emoji)}</span> ${esc(c.nome)}`
+        + (jaVende.has(c.id) ? ' <span class="ja">· já cadastrado</span>' : '') + `</button>`).join('')
+      + `</div>`;
+  }).join('');
+}
+function escolherDoCatalogo(id) {
+  const item = CATALOGO.find(c => c.id === id);
+  if (!item) return;
+  document.getElementById('p-nome').value = item.nome;
+  nomeDigitado();               // preenche categoria, emoji e unidade
+  alternarPainelCatalogo(false);
+  document.getElementById('p-preco').focus();   // próximo campo a preencher
+}
+document.getElementById('itens-catalogo').addEventListener('click', (e) => {
+  const bt = e.target.closest('button[data-item]');
+  if (bt) escolherDoCatalogo(Number(bt.dataset.item));
+});
+// Enter na busca não salva o produto: escolhe o item quando só um combina
+document.getElementById('busca-catalogo').addEventListener('keydown', (e) => {
+  if (e.key !== 'Enter') return;
+  e.preventDefault();
+  const itens = itensDoCatalogoPorBusca(e.target.value);
+  if (itens.length === 1) escolherDoCatalogo(itens[0].id);
+});
 
 // Nome igual (ou nome regional igual) vence; senão, o nome que começa com o item mais longo
 // ("Tomate cereja orgânico" → Tomate cereja; "Tomate italiano" → Tomate)
@@ -2069,9 +2162,11 @@ function renderLoja() {
     `${lista.length} produto${lista.length === 1 ? '' : 's'} disponíve${lista.length === 1 ? 'l' : 'is'}`
     + (semDistancia ? ' · para ordenar por distância, use "Usar minha localização" no carrinho' : '');
 
+  const semOferta = renderSemOferta(disponiveis, !lista.length);
   const vitrine = document.getElementById('vitrine');
   if (!lista.length) {
-    vitrine.innerHTML = `<p class="vazio">${disponiveis.length ? 'Nenhum produto encontrado com esses filtros.' : 'Nenhum produto à venda no momento.'}</p>`;
+    vitrine.innerHTML = `<p class="vazio">${semOferta ? 'Nenhum produtor vende isso agora. Veja abaixo o que existe no catálogo.'
+      : disponiveis.length ? 'Nenhum produto encontrado com esses filtros.' : 'Nenhum produto à venda no momento.'}</p>`;
     return;
   }
   vitrine.innerHTML = lista.map(p => {
@@ -2092,19 +2187,40 @@ function renderLoja() {
 // Botões de categoria (só as que têm produto à venda), com a contagem de cada uma
 function renderCategoriasLoja(daBusca) {
   const area = document.getElementById('filtros-categoria');
-  const temCategoria = daBusca.some(p => p.categoria);   // sem o script 09, os produtos não têm categoria
+  // Sem o script 09 os produtos não têm categoria. Com o catálogo, todas as categorias
+  // aparecem, mesmo sem oferta: o comprador vê o que existe em "Sem produtor vendendo agora".
+  const temCategoria = CATALOGO_ATIVO || daBusca.some(p => p.categoria);
   area.classList.toggle('hidden', !temCategoria);
   if (!temCategoria) { LOJA.categoria = ''; area.innerHTML = ''; return; }
   const conta = {};
   daBusca.forEach(p => { conta[p.categoria] = (conta[p.categoria] || 0) + 1; });
-  if (LOJA.categoria && !conta[LOJA.categoria]) LOJA.categoria = '';
+  if (LOJA.categoria && !conta[LOJA.categoria] && !CATALOGO_ATIVO) LOJA.categoria = '';
   const focado = document.activeElement && document.activeElement.closest('#filtros-categoria')
     ? document.activeElement.dataset.cat : null;
   const botao = (cat, rotulo, n) =>
     `<button type="button" data-cat="${cat}" aria-pressed="${LOJA.categoria === cat}">${esc(rotulo)} <span class="cont">(${n})</span></button>`;
   area.innerHTML = '<span class="rotulo" aria-hidden="true">Categoria:</span>' + botao('', 'Todas', daBusca.length)
-    + Object.keys(CATEGORIAS).filter(c => conta[c]).map(c => botao(c, CATEGORIAS[c], conta[c])).join('');
+    + Object.keys(CATEGORIAS).filter(c => conta[c] || CATALOGO_ATIVO).map(c => botao(c, CATEGORIAS[c], conta[c] || 0)).join('');
   if (focado != null) { const b = area.querySelector(`button[data-cat="${focado}"]`); if (b) b.focus(); }
+}
+
+// Itens do catálogo (da categoria e da busca escolhidas) que nenhum produtor vende agora
+function renderSemOferta(disponiveis, vitrineVazia) {
+  const caixa = document.getElementById('sem-oferta');
+  if (!CATALOGO_ATIVO || !CATALOGO.length) { caixa.classList.add('hidden'); return 0; }
+  const vendidos = new Set(disponiveis.filter(p => p.catalogo_id).map(p => p.catalogo_id));
+  const texto = document.getElementById('busca-loja').value;
+  const itens = itensDoCatalogoPorBusca(texto, LOJA.categoria).filter(c => !vendidos.has(c.id));
+  caixa.classList.toggle('hidden', !itens.length);
+  if (!itens.length) return 0;
+  // Quem buscou, ou escolheu uma categoria sem oferta, quer ver a lista já aberta
+  if (texto.trim() || (LOJA.categoria && vitrineVazia)) document.getElementById('det-sem-oferta').open = true;
+  document.getElementById('tit-sem-oferta').textContent =
+    `Sem produtor vendendo agora: ${itens.length} ite${itens.length === 1 ? 'm' : 'ns'} do catálogo`
+    + (LOJA.categoria ? ` em ${CATEGORIAS[LOJA.categoria]}` : '');
+  document.getElementById('lista-sem-oferta').innerHTML = itens.map(c =>
+    `<li><span aria-hidden="true">${esc(c.emoji)}</span> ${esc(c.nome)}${LOJA.categoria ? '' : `<small>${esc(CATEGORIAS[c.categoria])}</small>`}</li>`).join('');
+  return itens.length;
 }
 
 function mensagemLoja(texto, tipo = 'ok') {
@@ -2845,6 +2961,7 @@ function abrirModal(id) {
   // Catálogo: na edição, mostra o vínculo atual; no cadastro, começa vazio
   EMOJI_AUTO = '';
   form.dataset.catAuto = '';
+  alternarPainelCatalogo(false);
   form.dataset.catalogo = p && p.catalogo_id ? p.catalogo_id : '';
   document.getElementById('p-cat').value = (p && p.categoria) || 'outros';
   const itemAtual = catalogoDoProduto(p);
