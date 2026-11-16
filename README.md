@@ -57,6 +57,39 @@ nesta ordem (cada um pode ser rodado mais de uma vez):
 7. `07-dados-demonstracao.sql` — **opcional**: 60 semanas de vendas simuladas numa
    conta de demonstração, para apresentar a previsão (as contas ficam com
    "(dados simulados)" no nome)
+8. `08-seguranca-dados.sql` — distância aproximada, limites, auditoria e endereço de
+   entrega apagado após 90 dias (LGPD)
+
+## Segurança e proteção de dados
+
+**No banco (Supabase):**
+- Row Level Security em todas as tabelas: cada pessoa só vê os próprios dados; o
+  endereço de entrega só aparece para o agricultor daquele pedido.
+- Ninguém vira administrador pelo cadastro; o pedido só muda de status pelas regras.
+- A distância até o produtor é aproximada (km inteiro, grade de ~1 km), para que a
+  localização da propriedade não possa ser descoberta por triangulação.
+- Auditoria (só o admin lê): quem mudou o status de um pedido, um preço ou a localização.
+- Endereço de entrega apagado 90 dias após a entrega ou o cancelamento.
+- Limites de tamanho nos textos e de pedidos por comprador.
+
+**No site:**
+- Content-Security-Policy: só scripts deste site e do jsDelivr; conexões só com o
+  Supabase e o ViaCEP (dados não saem para outros servidores).
+- Bibliotecas em versão fixa e com `integrity` (SRI).
+- Todo texto vindo do banco passa por escape antes de virar HTML (contra XSS).
+- Senha com no mínimo 8 caracteres, com letras e números; sessão sem "Manter
+  conectado" termina após 30 minutos sem uso.
+
+**Configurar no painel do Supabase** (não dá para fazer por código):
+- Authentication → Email: "Confirm email" ligado; senha mínima de 8 caracteres,
+  com letras e números; proteção contra senhas vazadas, se o plano permitir.
+- Authentication → URL Configuration: só o endereço do site nos redirecionamentos.
+- Database → Extensions: ligar `pg_cron` e rodar o script 08 de novo (agenda a
+  limpeza diária dos endereços antigos).
+
+Limite conhecido: o GitHub Pages não permite cabeçalhos HTTP próprios
+(`frame-ancestors`, por exemplo), e o CSP mantém `'unsafe-inline'` porque os
+botões usam `onclick`.
 
 ## Publicação
 

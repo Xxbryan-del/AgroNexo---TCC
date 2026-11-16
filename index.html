@@ -3,10 +3,19 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<!-- SEGURANÇA (o GitHub Pages não deixa configurar cabeçalhos, então vai por meta tag)
+     Content-Security-Policy: o navegador só aceita scripts deste site e do jsDelivr,
+     e só conversa com o Supabase e o ViaCEP. Se alguém conseguir injetar código,
+     ele não consegue mandar os dados para outro servidor (connect-src/img-src).
+     Limite conhecido: 'unsafe-inline' continua, porque os botões usam onclick="...". -->
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net; img-src 'self' data: blob: https://cdn.jsdelivr.net https://*.tile.openstreetmap.org; connect-src 'self' https://abmglxkfcwlfnyggnkcm.supabase.co wss://abmglxkfcwlfnyggnkcm.supabase.co https://viacep.com.br; font-src 'self'; object-src 'none'; base-uri 'none'; form-action 'self'; worker-src 'self' blob:">
+<!-- O código de rastreio (?rastreio=...) e as telas abertas não vazam para outros sites -->
+<meta name="referrer" content="no-referrer">
 <meta name="description" content="AgroNexo — gestão e comercialização da agricultura familiar">
 <title>AgroNexo - Gestão e Comercialização da Agricultura Familiar</title>
-<!-- Leaflet (versão fixa): mapa da rota de entregas -->
-<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.css">
+<!-- Leaflet (versão fixa): mapa da rota de entregas.
+     integrity = impressão digital do arquivo: se o CDN entregar qualquer coisa diferente, o navegador recusa -->
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.css" integrity="sha384-sHL9NAb7lN7rfvG5lfHpm643Xkcjzp4jFvuavGOndn6pjVqS6ny56CAt3nsEVT4H" crossorigin="anonymous">
 <style>
 *{margin:0;padding:0;box-sizing:border-box;font-family:'Segoe UI',system-ui,sans-serif}
 
@@ -434,7 +443,7 @@ html.hc .acess button[aria-pressed="true"]{background:#FFD400;color:#000}
 
 <div class="etapa hidden" id="et2">
 <div class="field"><label for="c-nome">Nome completo / Razão social</label><input type="text" id="c-nome" autocomplete="organization" placeholder="Seu nome ou empresa"></div>
-<div class="field"><label for="c-cnpj">CNPJ</label><input type="text" id="c-cnpj" inputmode="numeric" placeholder="00.000.000/0000-00" maxlength="18" oninput="mascCnpj()"></div>
+<div class="field"><label for="c-cnpj">CNPJ</label><input type="text" id="c-cnpj" autocapitalize="characters" autocomplete="off" placeholder="00.000.000/0000-00" maxlength="18" oninput="mascCnpj()"></div>
 <div class="field"><label for="c-ie">Inscrição Estadual</label><input type="text" id="c-ie" placeholder="Número da IE (ou 'Isento')"></div>
 </div>
 
@@ -450,7 +459,7 @@ html.hc .acess button[aria-pressed="true"]{background:#FFD400;color:#000}
 
 <div class="etapa hidden" id="et4">
 <div class="field"><label for="c-email">Email</label><input type="email" id="c-email" autocomplete="email" placeholder="seu@email.com"></div>
-<div class="field"><label for="c-senha">Senha (mín. 6 caracteres)</label>
+<div class="field"><label for="c-senha">Senha (mín. 8 caracteres, com letras e números)</label>
 <div class="senha-wrap">
 <input type="password" id="c-senha" autocomplete="new-password" placeholder="Crie uma senha" oninput="forcaSenha()" aria-describedby="ind-senha">
 <button type="button" class="olho" aria-label="Mostrar senha" aria-controls="c-senha" onclick="toggleSenha('c-senha',this)">👁️</button>
@@ -870,6 +879,22 @@ html.hc .acess button[aria-pressed="true"]{background:#FFD400;color:#000}
 </div>
 </div>
 
+<!-- MODAL: NOVA SENHA (link de recuperação do email). Antes era um prompt(), que mostra a senha em texto aberto -->
+<div class="modal hidden" id="modal-senha" role="dialog" aria-modal="true" aria-labelledby="senha-titulo">
+<form class="modal-caixa" id="form-nova-senha" onsubmit="salvarNovaSenha(event)" novalidate>
+<h2 id="senha-titulo"><span aria-hidden="true">🔑</span> Criar nova senha</h2>
+<div class="erro" id="erro-senha" role="alert"></div>
+<div class="field"><label for="n-senha">Nova senha <span class="dica">Mínimo de 8 caracteres, com letras e números</span></label>
+<div class="senha-wrap">
+<input type="password" id="n-senha" autocomplete="new-password">
+<button type="button" class="olho" aria-label="Mostrar senha" aria-controls="n-senha" onclick="toggleSenha('n-senha',this)">👁️</button>
+</div></div>
+<div class="field"><label for="n-senha2">Repita a nova senha</label><input type="password" id="n-senha2" autocomplete="new-password"></div>
+<button type="submit" class="btn" id="btn-nova-senha">Salvar nova senha</button>
+<button type="button" class="btn btn-voltar" onclick="fecharModalSenha()">Cancelar</button>
+</form>
+</div>
+
 <!-- BARRA DE ACESSIBILIDADE (RF12 — WCAG 2.1) -->
 <div class="acess" role="toolbar" aria-label="Recursos de acessibilidade">
 <button type="button" onclick="mudarFonte(-1)" aria-label="Diminuir o texto">A−</button>
@@ -879,12 +904,16 @@ html.hc .acess button[aria-pressed="true"]{background:#FFD400;color:#000}
 </div>
 
 
-<!-- Chart.js (versão fixa): gráfico do Dashboard -->
-<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
-<!-- QR code do rastreio e mapa da rota (versões fixas) -->
-<script src="https://cdn.jsdelivr.net/npm/qrcode-generator@1.4.4/qrcode.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<!-- Bibliotecas em versão FIXA e com integrity (impressão digital SHA-384): se o CDN for
+     invadido ou trocar o arquivo, o navegador se recusa a rodar. Para atualizar uma versão,
+     o hash precisa ser recalculado junto. -->
+<!-- Chart.js: gráficos do Dashboard e dos Relatórios -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js" integrity="sha384-9nhczxUqK87bcKHh20fSQcTGD4qq5GhayNYSYWqwBkINBhOfQLg/P5HG5lF1urn4" crossorigin="anonymous"></script>
+<!-- QR code do rastreio e mapa da rota -->
+<script src="https://cdn.jsdelivr.net/npm/qrcode-generator@1.4.4/qrcode.js" integrity="sha384-8FWZA6BGMXhsfO+BLtrJK0We6gg5o1JyO8xQm6peWDEUs17ACA5ziE/NIAkl9z2k" crossorigin="anonymous"></script>
+<script src="https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.js" integrity="sha384-cxOPjt7s7Iz04uaHJceBmS+qpjv2JkIHNVcuOrM+YHwZOmJGBXI00mdUXEq65HTH" crossorigin="anonymous"></script>
+<!-- Supabase: antes era "@2" (qualquer versão 2.x nova entrava sozinha no site) -->
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.118.0/dist/umd/supabase.min.js" integrity="sha384-UagCvVPT5XXA0Hx+nJYUAGBFseHT9zBgpJMSebsAxl9lciTwbT+39j5VfRjdP5Tp" crossorigin="anonymous"></script>
 <script>
 /* ================================================================
    SEÇÃO 1 — BANCO DE DADOS (era o db.js — agora embutido aqui)
@@ -952,11 +981,13 @@ function traduzErro(msg) {
   if (msg.includes('Invalid login credentials')) return 'Email ou senha incorretos.';
   if (msg.includes('Email not confirmed'))       return 'Confirme seu email antes de entrar (veja sua caixa de entrada).';
   if (msg.includes('already registered'))        return 'Este email já está cadastrado.';
-  if (msg.includes('Password should be'))        return 'A senha deve ter no mínimo 6 caracteres.';
+  if (/weak|pwned|known to be|leaked/i.test(msg)) return 'Essa senha já apareceu em vazamentos de dados na internet. Escolha outra.';
+  if (/Password should|password.*(characters|contain)/i.test(msg)) return 'A senha não atende às regras: mínimo de 8 caracteres, com letras e números.';
+  if (/same.*password|different from the old/i.test(msg)) return 'A nova senha precisa ser diferente da anterior.';
   if (msg.includes('valid password'))            return 'Informe uma senha válida.';
   if (/rate limit|For security purposes/i.test(msg)) return 'Muitas tentativas seguidas. Aguarde alguns minutos e tente de novo.';
   if (msg.includes('row-level security'))        return 'Você não tem permissão para esta ação.';
-  if (msg.includes('check constraint'))          return 'Algum valor está fora das regras (preço, estoque ou nome).';
+  if (msg.includes('check constraint'))          return 'Algum valor está fora das regras: confira tamanhos e limites (nome, preço, estoque, endereço).';
   if (/ativo/.test(msg) && /column/i.test(msg))  return 'Para arquivar produtos, rode o script 02-historico-dashboard.sql no Supabase.';
   if (msg.includes('foreign key'))               return 'Este produto já tem pedidos e não pode ser apagado. Use "Arquivar".';
   if (/ajustar_estoque/.test(msg))               return 'Para registrar movimentações, rode o script 03-estoque.sql no Supabase.';
@@ -1041,12 +1072,44 @@ async function esqueciSenha() {
   } catch (e) { mostrarErro('Não foi possível enviar: ' + e.message); }
 }
 
-async function definirNovaSenha() {
-  const nova = prompt('Digite sua nova senha (mínimo 6 caracteres):');
-  if (!nova) return;
-  if (nova.length < 6) { alert('A senha deve ter no mínimo 6 caracteres.'); return; }
+// Regra de senha usada no cadastro e na troca de senha.
+// A regra que vale de verdade fica no Supabase (Authentication → Policies de senha);
+// esta é só para avisar antes de enviar.
+function problemaSenha(s) {
+  if (s.length < 8) return `A senha precisa de pelo menos 8 caracteres (faltam ${8 - s.length}).`;
+  if (!/\p{L}/u.test(s) || !/\d/.test(s)) return 'Use letras e números na senha.';
+  return '';
+}
+
+// Chamada quando a pessoa volta pelo link de "esqueci a senha" (evento PASSWORD_RECOVERY)
+let focoAntesDaSenha = null;
+function definirNovaSenha() {
+  focoAntesDaSenha = document.activeElement;
+  document.getElementById('form-nova-senha').reset();
+  document.getElementById('erro-senha').textContent = '';
+  document.getElementById('modal-senha').classList.remove('hidden');
+  document.getElementById('n-senha').focus();
+}
+function fecharModalSenha() {
+  document.getElementById('form-nova-senha').reset();   // a senha não fica no campo
+  document.getElementById('modal-senha').classList.add('hidden');
+  if (focoAntesDaSenha) focoAntesDaSenha.focus();
+}
+async function salvarNovaSenha(ev) {
+  ev.preventDefault();
+  const erro = document.getElementById('erro-senha');
+  const nova = document.getElementById('n-senha').value, repetida = document.getElementById('n-senha2').value;
+  erro.textContent = problemaSenha(nova) || (nova !== repetida ? 'As senhas não conferem.' : '');
+  if (erro.textContent) return;
+  const bt = document.getElementById('btn-nova-senha');
+  bt.disabled = true;
   const { error } = await db.auth.updateUser({ password: nova });
-  alert(error ? 'Não foi possível trocar a senha: ' + traduzErro(error.message) : 'Senha alterada com sucesso!');
+  bt.disabled = false;
+  if (error) { erro.textContent = 'Não foi possível trocar a senha: ' + traduzErro(error.message); return; }
+  fecharModalSenha();
+  // O link do email já abre a sessão: a mensagem vai para a tela que estiver visível
+  if (document.getElementById('tela-app').classList.contains('hidden')) mostrarOk('Senha alterada com sucesso!');
+  else alert('Senha alterada com sucesso!');
 }
 
 let perfilSel = 'agricultor', etapaAtual = 1;
@@ -1057,11 +1120,26 @@ function selPerfil(el, p) {
   el.setAttribute('aria-pressed', 'true');
   perfilSel = p;
 }
+// Aceita o CNPJ alfanumérico da Receita Federal (novos CNPJs a partir de julho/2026)
 function mascCnpj() {
-  let v = document.getElementById('c-cnpj').value.replace(/\D/g, '').slice(0, 14);
-  v = v.replace(/^(\d{2})(\d)/, '$1.$2').replace(/^(\d{2})\.(\d{3})(\d)/, '$1.$2.$3')
-       .replace(/\.(\d{3})(\d)/, '.$1/$2').replace(/(\d{4})(\d)/, '$1-$2');
+  let v = document.getElementById('c-cnpj').value.toUpperCase().replace(/[^0-9A-Z]/g, '').slice(0, 14);
+  v = v.replace(/^(\w{2})(\w)/, '$1.$2').replace(/^(\w{2})\.(\w{3})(\w)/, '$1.$2.$3')
+       .replace(/\.(\w{3})(\w)/, '.$1/$2').replace(/(\w{4})(\w)/, '$1-$2');
   document.getElementById('c-cnpj').value = v;
+}
+// Confere os 2 dígitos verificadores (módulo 11, pesos 2 a 9 da direita para a esquerda).
+// No formato alfanumérico cada caractere vale (código ASCII − 48): '0'–'9' = 0–9, 'A'–'Z' = 17–42.
+function cnpjValido(texto) {
+  const c = String(texto).toUpperCase().replace(/[^0-9A-Z]/g, '');
+  if (!/^[0-9A-Z]{12}\d{2}$/.test(c) || /^(.)\1{13}$/.test(c)) return false;
+  const dv = base => {
+    let soma = 0, peso = 2;
+    for (let i = base.length - 1; i >= 0; i--) { soma += (base.charCodeAt(i) - 48) * peso; peso = peso === 9 ? 2 : peso + 1; }
+    const resto = soma % 11;
+    return resto < 2 ? 0 : 11 - resto;
+  };
+  const d1 = dv(c.slice(0, 12)), d2 = dv(c.slice(0, 12) + d1);
+  return c.endsWith(`${d1}${d2}`);
 }
 function mascCep() {
   const campo = document.getElementById('c-cep');
@@ -1102,8 +1180,9 @@ function forcaSenha() {
   const s = document.getElementById('c-senha').value;
   const ind = document.getElementById('ind-senha');
   if (!s) { ind.textContent = ''; ind.className = 'ind-senha'; return; }
-  if (s.length >= 6) { ind.textContent = '✅ Senha válida'; ind.className = 'ind-senha bom'; }
-  else { ind.textContent = '⚠️ Falta(m) ' + (6 - s.length) + ' caractere(s)'; ind.className = 'ind-senha falta'; }
+  const problema = problemaSenha(s);
+  if (!problema) { ind.textContent = '✅ Senha válida'; ind.className = 'ind-senha bom'; }
+  else { ind.textContent = '⚠️ ' + problema; ind.className = 'ind-senha falta'; }
 }
 function mostrarEtapa(n) {
   etapaAtual = n;
@@ -1124,7 +1203,7 @@ function proximaEtapa(ev) {
   if (etapaAtual === 1) { mostrarEtapa(2); return; }
   if (etapaAtual === 2) {
     if (!val('c-nome')) { mostrarErro('Informe seu nome/razão social'); return; }
-    if (val('c-cnpj').replace(/\D/g, '').length !== 14) { mostrarErro('CNPJ inválido (14 dígitos)'); return; }
+    if (!cnpjValido(val('c-cnpj'))) { mostrarErro('CNPJ inválido: confira os caracteres (os 2 últimos são dígitos verificadores).'); return; }
     mostrarEtapa(3); return;
   }
   if (etapaAtual === 3) {
@@ -1150,8 +1229,8 @@ async function criarConta() {
   const email = document.getElementById('c-email').value.trim();
   const senha = document.getElementById('c-senha').value;
   const senha2 = document.getElementById('c-senha2').value;
-  if (!email.includes('@')) { mostrarErro('Informe um email válido'); return; }
-  if (senha.length < 6) { mostrarErro('A senha deve ter no mínimo 6 caracteres'); return; }
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) { mostrarErro('Informe um email válido'); return; }
+  if (problemaSenha(senha)) { mostrarErro(problemaSenha(senha)); return; }
   if (senha !== senha2) { mostrarErro('As senhas não conferem'); return; }
   document.getElementById('btn-avancar').disabled = true;
   try {
@@ -1298,6 +1377,21 @@ async function fazerSair() {
   document.getElementById('senha').value = '';
   document.getElementById('email').focus();
 }
+
+/* ---------- Sem "Manter conectado": a sessão termina após 30 min sem uso ----------
+   Protege quem usa computador compartilhado (associação, escola, lan house, celular emprestado). */
+const MINUTOS_INATIVO = 30;
+let ultimoUso = Date.now();
+['pointerdown', 'keydown', 'scroll', 'touchstart'].forEach(ev =>
+  document.addEventListener(ev, () => { ultimoUso = Date.now(); }, { passive: true, capture: true }));
+setInterval(async () => {
+  if (!MEU_USUARIO) { ultimoUso = Date.now(); return; }
+  let sessaoCurta = false;
+  try { sessaoCurta = localStorage.getItem(CHAVE_NAO_MANTER) === '1'; } catch (e) {}
+  if (!sessaoCurta || Date.now() - ultimoUso < MINUTOS_INATIVO * 60000) return;
+  await fazerSair();
+  mostrarOk(`Por segurança, a sessão foi encerrada depois de ${MINUTOS_INATIVO} minutos sem uso. Entre de novo para continuar.`);
+}, 30000);
 
 // Recarrega produtos e painel juntos. A tela anterior continua visível (meio apagada)
 // até os dados novos chegarem: nada "pisca" quando o tempo real dispara.
@@ -1846,7 +1940,8 @@ function cidadeDe(pr) { return pr && pr.cidade ? pr.cidade + (pr.uf ? '/' + pr.u
 function textoProdutor(pr) {
   if (!pr) return 'Produtor';
   return pr.nome + (pr.cidade ? ' · ' + cidadeDe(pr) : '')
-       + (pr.distancia_km != null ? ` · a ${numero(pr.distancia_km, 1)} km` : '');
+       // distância aproximada (km inteiro): o banco não revela onde fica a propriedade
+       + (pr.distancia_km != null ? ` · a cerca de ${numero(pr.distancia_km)} km` : '');
 }
 function noCarrinho(id) { const i = LOJA.carrinho.find(x => x.produto_id === id); return i ? i.qtd : 0; }
 
@@ -2650,7 +2745,12 @@ function fecharModal() {
 document.addEventListener('keydown', (e) => {
   const modal = document.querySelector('.modal:not(.hidden)');
   if (!modal) return;
-  if (e.key === 'Escape') { if (modal.id === 'modal-qr') fecharQr(); else fecharModal(); return; }
+  if (e.key === 'Escape') {
+    if (modal.id === 'modal-qr') fecharQr();
+    else if (modal.id === 'modal-senha') fecharModalSenha();
+    else fecharModal();
+    return;
+  }
   if (e.key !== 'Tab') return;
   const focaveis = modal.querySelectorAll('input, select, button');
   const primeiro = focaveis[0], ultimo = focaveis[focaveis.length - 1];
