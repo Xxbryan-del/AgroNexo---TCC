@@ -646,10 +646,11 @@ html.hc .acess button[aria-pressed="true"]{background:#FFD400;color:#000}
 <!-- ===== TELA: MARKETPLACE (comprador) ===== -->
 <section class="tela hidden" id="tela-marketplace" aria-labelledby="titulo">
 <div class="barra-produtos">
-<div class="field"><label for="busca-loja">Buscar produto ou produtor</label><input type="search" id="busca-loja" placeholder="Ex.: queijo" autocomplete="off" oninput="renderLoja()"></div>
+<div class="field"><label for="busca-loja">Buscar produto ou produtor</label><input type="search" id="busca-loja" placeholder="Ex.: banana, mandioca, verduras" autocomplete="off" oninput="renderLoja()"></div>
 <div class="field"><label for="cidade-loja">Cidade</label><select id="cidade-loja" onchange="renderLoja()"><option value="">Todas</option></select></div>
 <div class="field"><label for="ordem-loja">Ordenar por</label><select id="ordem-loja" onchange="renderLoja()"><option value="nome">Nome</option><option value="preco">Menor preço</option><option value="distancia">Mais perto</option></select></div>
 </div>
+<div class="filtros hidden" id="filtros-categoria" role="group" aria-label="Filtrar por categoria"></div>
 <div class="ok" id="msg-loja" role="status"></div>
 <div class="loja">
 <div>
@@ -851,12 +852,16 @@ html.hc .acess button[aria-pressed="true"]{background:#FFD400;color:#000}
 <form class="modal-caixa" id="form-produto" onsubmit="salvarProduto(event)" novalidate>
 <h2 id="modal-titulo"><span aria-hidden="true">🌾</span> <span id="modal-titulo-texto">Cadastrar Novo Produto</span></h2>
 <div class="erro" id="erro-modal" role="alert"></div>
-<div class="field"><label for="p-nome">Nome</label><input id="p-nome" maxlength="80" placeholder="Ex: Tomate Italiano"></div>
-<div class="field"><label for="p-emoji">Emoji</label><input id="p-emoji" value="🍅" maxlength="4"></div>
+<div class="field"><label for="p-nome">Nome <span class="dica">Comece a digitar para ver o catálogo (frutas, legumes, verduras…) ou escreva outro nome</span></label>
+<input id="p-nome" maxlength="80" placeholder="Ex.: Tomate, Cupuaçu, Macaxeira" list="lista-catalogo" autocomplete="off" oninput="nomeDigitado()" aria-describedby="info-catalogo">
+<datalist id="lista-catalogo"></datalist>
+<span class="dica" id="info-catalogo" aria-live="polite"></span></div>
+<div class="field" id="campo-categoria"><label for="p-cat">Categoria</label><select id="p-cat"><option value="frutas">Frutas</option><option value="legumes">Legumes</option><option value="verduras">Verduras</option><option value="raizes">Raízes, tubérculos e bulbos</option><option value="temperos">Temperos e ervas</option><option value="outros" selected>Outros</option></select></div>
+<div class="field"><label for="p-emoji">Emoji</label><input id="p-emoji" maxlength="4" placeholder="🌾"></div>
 <div class="field"><label for="p-preco">Preço (R$) <span class="dica" id="dica-preco"></span></label><input id="p-preco" type="number" step="0.01" min="0.01" placeholder="6.50"></div>
 <div class="field"><label for="p-estoque">Estoque <span class="dica" id="dica-estoque"></span></label><input id="p-estoque" type="number" step="1" min="0" placeholder="50"></div>
 <div class="field"><label for="p-min">Estoque mínimo (alerta)</label><input id="p-min" type="number" step="1" min="0" value="5"></div>
-<div class="field"><label for="p-un">Unidade</label><select id="p-un"><option>kg</option><option>un</option><option>duzia</option><option>pote</option><option>caixa</option></select></div>
+<div class="field"><label for="p-un">Unidade</label><select id="p-un"><option>kg</option><option>un</option><option>duzia</option><option>maço</option><option>litro</option><option>pote</option><option>caixa</option></select></div>
 <button type="submit" class="btn" id="btn-salvar">Salvar no banco</button>
 <button type="button" class="btn btn-voltar" onclick="fecharModal()">Cancelar</button>
 </form>
@@ -1353,6 +1358,7 @@ async function abrirApp() {
   configurarLoja();
   configurarPedidos();
   configurarRelatorios();
+  carregarCatalogo();   // sem esperar: o catálogo chega e as telas se ajustam
   document.getElementById('tela-auth').classList.add('hidden');
   document.getElementById('tela-app').classList.remove('hidden');
   irPara('dashboard');
@@ -1479,6 +1485,91 @@ function escolherFiltro(filtro, redesenhar = true) {
 
 function semAcento(t) { return String(t || '').normalize('NFD').replace(/\p{Diacritic}/gu, '').toLowerCase(); }
 
+/* ---------- Catálogo de produtos (script 09) ----------
+   Base de referência com frutas, legumes, verduras, raízes, temperos e outros,
+   com os nomes regionais (macaxeira = mandioca = aipim). O agricultor escolhe
+   do catálogo ou escreve outro nome; o banco faz o mesmo vínculo pelo nome. */
+const CATEGORIAS = {
+  frutas:   'Frutas',
+  legumes:  'Legumes',
+  verduras: 'Verduras',
+  raizes:   'Raízes, tubérculos e bulbos',
+  temperos: 'Temperos e ervas',
+  outros:   'Outros'
+};
+let CATALOGO = [], CATALOGO_ATIVO = false, EMOJI_AUTO = '';
+
+// Mesma regra do banco (normalizar_nome): sem acento, minúsculo, hífen vira espaço
+function normalizarNome(t) { return semAcento(t).replace(/[-_]+/g, ' ').replace(/\s+/g, ' ').trim(); }
+
+async function carregarCatalogo() {
+  const { data, error } = await db.from('catalogo').select('id, nome, categoria, emoji, unidade, sinonimos').order('nome');
+  CATALOGO_ATIVO = !error;   // sem o script 09, o cadastro continua como antes
+  CATALOGO = (data || []).map(c => ({ ...c, chaves: [c.nome, ...(c.sinonimos || [])].map(normalizarNome) }));
+  // Sugestões do campo Nome: cada item e cada nome regional (que aponta para o item)
+  const lista = document.getElementById('lista-catalogo');
+  lista.innerHTML = '';
+  CATALOGO.forEach(c => {
+    const o = document.createElement('option');
+    o.value = c.nome;
+    o.label = CATEGORIAS[c.categoria] + ((c.sinonimos || []).length ? ' · também: ' + c.sinonimos.join(', ') : '');
+    lista.appendChild(o);
+    (c.sinonimos || []).forEach(s => {
+      const o2 = document.createElement('option');
+      o2.value = s;
+      o2.label = '= ' + c.nome;
+      lista.appendChild(o2);
+    });
+  });
+  document.getElementById('campo-categoria').classList.toggle('hidden', !CATALOGO_ATIVO);
+  if (MEU_USUARIO) { renderTabela(); renderLoja(); }
+}
+
+// Nome igual (ou nome regional igual) vence; senão, o nome que começa com o item mais longo
+// ("Tomate cereja orgânico" → Tomate cereja; "Tomate italiano" → Tomate)
+function itemDoCatalogo(nome) {
+  const v = normalizarNome(nome);
+  if (!v) return null;
+  let melhor = null, nota = 0;
+  CATALOGO.forEach(c => c.chaves.forEach(k => {
+    const n = v === k ? 1000 + k.length : v.startsWith(k + ' ') ? k.length : 0;
+    if (n > nota) { nota = n; melhor = c; }
+  }));
+  return melhor;
+}
+function catalogoDoProduto(p) { return (p && p.catalogo_id && CATALOGO.find(c => c.id === p.catalogo_id)) || null; }
+function nomeCategoria(p) { return p && p.categoria ? (CATEGORIAS[p.categoria] || '') : ''; }
+
+// Ao digitar o nome no cadastro: categoria, emoji e unidade vêm do catálogo
+function nomeDigitado() {
+  if (!CATALOGO_ATIVO) return;
+  const form = document.getElementById('form-produto');
+  const info = document.getElementById('info-catalogo');
+  const nome = document.getElementById('p-nome').value;
+  const item = itemDoCatalogo(nome);
+  form.dataset.catalogo = item ? item.id : '';
+  const cat = document.getElementById('p-cat'), emoji = document.getElementById('p-emoji');
+  if (!item) {
+    // Desfaz só o que o catálogo tinha preenchido; o que a pessoa escolheu fica
+    if (form.dataset.catAuto && cat.value === form.dataset.catAuto) cat.value = 'outros';
+    if (EMOJI_AUTO && emoji.value === EMOJI_AUTO) emoji.value = '';
+    form.dataset.catAuto = '';
+    EMOJI_AUTO = '';
+    info.textContent = nome.trim() ? 'Fora do catálogo: escolha a categoria abaixo.' : '';
+    return;
+  }
+  cat.value = item.categoria;
+  form.dataset.catAuto = item.categoria;
+  if (!PRODUTO_EDITANDO) {   // na edição, a unidade dos pedidos já feitos não muda sozinha
+    const un = document.getElementById('p-un');
+    if (![...un.options].some(o => o.value === item.unidade)) un.add(new Option(item.unidade, item.unidade));
+    un.value = item.unidade;
+  }
+  if (!emoji.value || emoji.value === EMOJI_AUTO) { emoji.value = item.emoji; EMOJI_AUTO = item.emoji; }
+  info.textContent = `Do catálogo: ${item.nome} · ${CATEGORIAS[item.categoria]}`
+                   + (PRODUTO_EDITANDO ? '' : ` · unidade sugerida: ${item.unidade}`);
+}
+
 function situacaoProduto(p) {
   if (p.ativo === false)             return ['b-n', 'Arquivado'];
   if (p.estoque <= 0)                return ['b-r', 'Esgotado'];
@@ -1496,7 +1587,7 @@ function renderTabela() {
   const termo = semAcento(document.getElementById('busca-produto').value.trim());
   const lista = PRODUTOS
     .filter(FILTROS_PRODUTO[FILTRO_PRODUTOS])
-    .filter(p => !termo || semAcento(p.nome).includes(termo));
+    .filter(p => !termo || semAcento(p.nome + ' ' + nomeCategoria(p)).includes(termo));
   document.getElementById('contagem-produtos').textContent = `· ${lista.length} de ${PRODUTOS.length}`;
 
   const corpo = document.getElementById('tabela');
@@ -1520,7 +1611,7 @@ function renderTabela() {
       + `</div></td>`;
     // data-rotulo: no celular a linha vira cartão e o rótulo aparece antes do valor
     return `<tr${p.ativo === false ? ' class="arquivado"' : ''}>`
-         + `<td><span aria-hidden="true">${esc(p.emoji)}</span> ${nome}</td>`
+         + `<td><span aria-hidden="true">${esc(p.emoji)}</span> ${nome}${nomeCategoria(p) ? `<small>${esc(nomeCategoria(p))}</small>` : ''}</td>`
          + (admin ? `<td data-rotulo="Produtor">${esc(p.usuarios ? p.usuarios.nome : '—')}</td>` : '')
          + `<td class="num" data-rotulo="Preço">${moeda(p.preco)}/${u}</td>`
          + `<td class="num" data-rotulo="Estoque">${numero(p.estoque)} ${u}<small>mín. ${numero(p.estoque_minimo)}</small></td>`
@@ -1896,7 +1987,7 @@ function lerCarrinho() {
 function salvarCarrinho() { try { localStorage.setItem(chaveCarrinho(), JSON.stringify(LOJA.carrinho)); } catch (e) {} }
 
 function configurarLoja() {
-  Object.assign(LOJA, { produtores: new Map(), perfil: null, pedidos: [], local: null, enderecoPreenchido: false });
+  Object.assign(LOJA, { produtores: new Map(), perfil: null, pedidos: [], local: null, enderecoPreenchido: false, categoria: '' });
   LOJA.carrinho = MEU_USUARIO.perfil === 'comprador' ? lerCarrinho() : [];
   document.getElementById('busca-loja').value = '';
   document.getElementById('ordem-loja').value = 'nome';
@@ -1962,11 +2053,14 @@ function renderLoja() {
   const cidade = selCidade.value;
   const ordem = document.getElementById('ordem-loja').value;
   const distancia = p => { const pr = produtorDe(p); return pr && pr.distancia_km != null ? Number(pr.distancia_km) : Infinity; };
-  const lista = disponiveis.filter(p => {
-    const pr = produtorDe(p);
-    if (termo && !semAcento(p.nome + ' ' + (pr ? pr.nome : '')).includes(termo)) return false;
-    return !cidade || cidadeDe(pr) === cidade;
-  }).sort(ordem === 'preco'     ? (a, b) => a.preco - b.preco
+  // A busca entende os nomes regionais: "mandioca" acha a macaxeira; "frutas" acha a categoria
+  const textoBusca = p => {
+    const pr = produtorDe(p), item = catalogoDoProduto(p);
+    return semAcento([p.nome, pr ? pr.nome : '', nomeCategoria(p), item ? item.nome : '', ...(item ? item.sinonimos || [] : [])].join(' '));
+  };
+  const daBusca = disponiveis.filter(p => (!termo || textoBusca(p).includes(termo)) && (!cidade || cidadeDe(produtorDe(p)) === cidade));
+  renderCategoriasLoja(daBusca);
+  const lista = daBusca.filter(p => !LOJA.categoria || p.categoria === LOJA.categoria).sort(ordem === 'preco'     ? (a, b) => a.preco - b.preco
         : ordem === 'distancia' ? (a, b) => (distancia(a) - distancia(b)) || a.nome.localeCompare(b.nome, 'pt-BR')
         :                         (a, b) => a.nome.localeCompare(b.nome, 'pt-BR'));
 
@@ -1993,6 +2087,24 @@ function renderLoja() {
       + `<button type="button" class="btn-novo" data-adicionar="${p.id}"${resta > 0 ? '' : ' disabled'}>${resta > 0 ? 'Adicionar' : 'Tudo no carrinho'}</button></div>`
       + `</article>`;
   }).join('');
+}
+
+// Botões de categoria (só as que têm produto à venda), com a contagem de cada uma
+function renderCategoriasLoja(daBusca) {
+  const area = document.getElementById('filtros-categoria');
+  const temCategoria = daBusca.some(p => p.categoria);   // sem o script 09, os produtos não têm categoria
+  area.classList.toggle('hidden', !temCategoria);
+  if (!temCategoria) { LOJA.categoria = ''; area.innerHTML = ''; return; }
+  const conta = {};
+  daBusca.forEach(p => { conta[p.categoria] = (conta[p.categoria] || 0) + 1; });
+  if (LOJA.categoria && !conta[LOJA.categoria]) LOJA.categoria = '';
+  const focado = document.activeElement && document.activeElement.closest('#filtros-categoria')
+    ? document.activeElement.dataset.cat : null;
+  const botao = (cat, rotulo, n) =>
+    `<button type="button" data-cat="${cat}" aria-pressed="${LOJA.categoria === cat}">${esc(rotulo)} <span class="cont">(${n})</span></button>`;
+  area.innerHTML = '<span class="rotulo" aria-hidden="true">Categoria:</span>' + botao('', 'Todas', daBusca.length)
+    + Object.keys(CATEGORIAS).filter(c => conta[c]).map(c => botao(c, CATEGORIAS[c], conta[c])).join('');
+  if (focado != null) { const b = area.querySelector(`button[data-cat="${focado}"]`); if (b) b.focus(); }
 }
 
 function mensagemLoja(texto, tipo = 'ok') {
@@ -2214,6 +2326,12 @@ async function cancelarPedido(id) {
 document.getElementById('vitrine').addEventListener('click', (e) => {
   const bt = e.target.closest('button[data-adicionar]');
   if (bt) adicionarAoCarrinho(Number(bt.dataset.adicionar));
+});
+document.getElementById('filtros-categoria').addEventListener('click', (e) => {
+  const bt = e.target.closest('button[data-cat]');
+  if (!bt) return;
+  LOJA.categoria = bt.dataset.cat;
+  renderLoja();
 });
 document.getElementById('vitrine').addEventListener('keydown', (e) => {
   if (e.key === 'Enter' && e.target.matches('input[id^="q-"]')) { e.preventDefault(); adicionarAoCarrinho(Number(e.target.id.slice(2))); }
@@ -2667,7 +2785,12 @@ async function salvarProduto(ev) {
     emoji: document.getElementById('p-emoji').value.trim() || '🌾',
     preco,
     estoque_minimo: minimo,
-    unidade: document.getElementById('p-un').value
+    unidade: document.getElementById('p-un').value,
+    // Só depois do script 09 (senão o banco não conhece estas colunas)
+    ...(CATALOGO_ATIVO ? {
+      categoria: document.getElementById('p-cat').value,
+      catalogo_id: Number(document.getElementById('form-produto').dataset.catalogo) || null
+    } : {})
   };
   document.getElementById('btn-salvar').disabled = true;
 
@@ -2719,6 +2842,14 @@ function abrirModal(id) {
   document.getElementById('erro-modal').textContent = '';
   const p = id ? PRODUTOS.find(x => x.id === id) : null;
   PRODUTO_EDITANDO = p ? { id: p.id, estoque: p.estoque } : null;
+  // Catálogo: na edição, mostra o vínculo atual; no cadastro, começa vazio
+  EMOJI_AUTO = '';
+  form.dataset.catAuto = '';
+  form.dataset.catalogo = p && p.catalogo_id ? p.catalogo_id : '';
+  document.getElementById('p-cat').value = (p && p.categoria) || 'outros';
+  const itemAtual = catalogoDoProduto(p);
+  document.getElementById('info-catalogo').textContent = itemAtual
+    ? `Do catálogo: ${itemAtual.nome} · ${CATEGORIAS[itemAtual.categoria]}` : '';
   document.getElementById('modal-titulo-texto').textContent = p ? 'Editar produto' : 'Cadastrar Novo Produto';
   document.getElementById('btn-salvar').textContent = p ? 'Salvar alterações' : 'Salvar no banco';
   document.getElementById('dica-preco').textContent = p ? 'Pedidos já feitos mantêm o preço da época' : '';

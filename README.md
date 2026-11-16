@@ -21,7 +21,8 @@ ODS 08 (Trabalho Decente e Crescimento Econômico). Projeto de TCC — CEUNI FAM
 | Dashboard (vendas, previsão de estoque, atividade) | pronta |
 | Meus Produtos (editar, arquivar, excluir) | pronta |
 | Estoque (entradas, saídas e perdas com motivo, CSV) | pronta |
-| Marketplace (vitrine, carrinho, entrega e distância) e Meus Pedidos do comprador | pronta |
+| Marketplace (vitrine por categoria, carrinho, entrega e distância) e Meus Pedidos do comprador | pronta |
+| Catálogo de produtos: 97 frutas, legumes, verduras, raízes, temperos e outros, com nomes regionais da Amazônia | pronto |
 | Pedidos do agricultor: confirmar/entregar, rota de entregas (mapa + Google Maps) e QR code de rastreio | pronta |
 | Página pública de rastreabilidade (`?rastreio=<código>`, sem login) | pronta |
 | Relatórios: previsão de vendas, plano de colheita, faturamento, curva ABC, perdas; admin: renda gerada (ODS 08) | pronta |
@@ -54,11 +55,14 @@ nesta ordem (cada um pode ser rodado mais de uma vez):
 4. `04-marketplace.sql` — pedido com entrega, localização e código de rastreio
 5. `05-rastreabilidade.sql` — ficha pública do produto aberta pelo QR code
 6. `06-relatorios.sql` — renda gerada na plataforma (relatório do administrador)
-7. `07-dados-demonstracao.sql` — **opcional**: 60 semanas de vendas simuladas numa
-   conta de demonstração, para apresentar a previsão (as contas ficam com
-   "(dados simulados)" no nome)
+7. `07-dados-demonstracao.sql` — **opcional**: 60 semanas de vendas simuladas de 10
+   produtos numa conta de demonstração, para apresentar a previsão (as contas ficam
+   com "(dados simulados)" no nome)
 8. `08-seguranca-dados.sql` — distância aproximada, limites, auditoria e endereço de
    entrega apagado após 90 dias (LGPD)
+9. `09-catalogo.sql` — catálogo de referência (frutas, legumes, verduras, raízes,
+   temperos e outros) e categoria em cada produto, ligada sozinha pelo nome
+   ("Mandioca" → Macaxeira; "Tomate italiano" → Tomate)
 
 ## Segurança e proteção de dados
 

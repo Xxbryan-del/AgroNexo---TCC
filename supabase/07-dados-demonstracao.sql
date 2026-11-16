@@ -22,7 +22,8 @@
 --     pela semente fixa, gera os mesmos números).
 --   • Recusa rodar se a conta tiver pedidos de outros compradores (seriam
 --     dados reais).
---   • Cria 5 produtos com tendência, sazonalidade e ruído diferentes; vendas
+--   • Cria 10 produtos (legumes, verduras, frutas, raízes, temperos e outros)
+--     com tendência, sazonalidade e ruído diferentes; vendas
 --     pelo app quase todo dia, feira aos sábados (venda fora do app), colheita
 --     e perdas às segundas, consumo da família no dia 1º, alguns cancelamentos,
 --     os pedidos de ontem ainda "a entregar" (para a rota) e 2 de hoje
@@ -102,7 +103,12 @@ begin
       ('Alface crespa', '🥬', 'un',     2.50::numeric, 70, 15, 0.12, 0.10, 0.15,  1, 0),
       ('Queijo minas',  '🧀', 'kg',    38.00::numeric,  9,  3, 0.02, 0.35, 0.10, 12, 0),
       ('Ovos caipira',  '🥚', 'duzia', 14.00::numeric, 28,  6, 0.03, 0.00, 0.10, 12, 3),
-      ('Mel',           '🍯', 'pote',  30.00::numeric,  7,  2, 0.00, 0.15, 0.35,  7, 0)
+      ('Mel',           '🍯', 'pote',  30.00::numeric,  7,  2, 0.00, 0.15, 0.35,  7, 0),
+      ('Banana prata',  '🍌', 'duzia',  6.00::numeric, 30,  8, 0.08, 0.10, 0.10,  9, 0),
+      ('Abacaxi',       '🍍', 'un',     7.00::numeric, 18,  5, 0.06, 0.12, 0.30, 12, 0),
+      ('Cupuaçu',       '🧺', 'kg',    12.00::numeric, 10,  3, 0.05, 0.20, 0.45,  3, 2),
+      ('Macaxeira',     '🧺', 'kg',     5.00::numeric, 35, 10, 0.03, 0.05, 0.05,  8, 0),
+      ('Cheiro-verde',  '🌿', 'maço',   2.50::numeric, 45, 10, 0.15, 0.08, 0.10,  6, 0)
     ) as t(nome, emoji, unidade, preco, semana, minimo, perda, cresce, amp, pico, pend)
   loop
     insert into public.produtos (agricultor_id, nome, emoji, preco, unidade, estoque, estoque_minimo, criado_em)
