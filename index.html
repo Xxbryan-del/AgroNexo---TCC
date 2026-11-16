@@ -25,6 +25,9 @@
   --erro-bg:#FADBD8; --erro-tx:#96281B; --ok-bg:#E8F8F0; --ok-tx:#196F3D;
   --laranja-bg:#FDEBD0;
   --grafico:#1E8449; --grafico-hover:#196F3D; --grade:#E3E7EA; /* barras: 4,72:1 sobre o branco */
+  /* 2ª série (Relatórios: venda fora do app). Par verde/azul validado para daltonismo
+     (protan/deutan ΔE 20) e contraste ≥ 3:1 sobre o branco */
+  --grafico2:#3498DB; --faixa:rgba(30,132,73,.16);
   --sh:0 2px 8px rgba(0,0,0,.08);
 }
 /* Alto contraste (botão "Contraste" da barra de acessibilidade) */
@@ -35,6 +38,7 @@ html.hc{
   --bd:#fff; --bdi:#fff; --on:#fff; --foco:#FFD400;
   --erro-bg:#000; --erro-tx:#FF9B9B; --ok-bg:#000; --ok-tx:#7CFC9A; --laranja-bg:#000;
   --grafico:#FFD400; --grafico-hover:#FFF27A; --grade:#555;
+  --grafico2:#5DADE2; --faixa:rgba(255,212,0,.28);
   --sh:none;
 }
 html.hc :is(.btn,.btn-novo,.btn-sair,.tabs button,.pcard,.badge,.erro,.ok,.login-card,.cd,.stat,.modal-caixa,.acess,.acess button){border:2px solid #fff}
@@ -290,6 +294,42 @@ html.hc .acao.principal{background:#FFD400;color:#000}
 .linha-tempo li.feita{color:var(--d)}
 .linha-tempo li.feita::before{background:var(--g2);border-color:var(--g2)}
 @media(max-width:1000px){.rota-grid{grid-template-columns:minmax(0,1fr)}}
+
+/* ===== RELATÓRIOS ===== */
+.barra-rel{justify-content:space-between;align-items:center}
+#tela-relatorios .stats{grid-template-columns:repeat(2,minmax(0,1fr))} /* 2×2, e 4 em linha na tela larga: nunca "3 + 1" */
+@media(min-width:1200px){#tela-relatorios .stats{grid-template-columns:repeat(4,minmax(0,1fr))}}
+.acoes-rel{display:flex;gap:8px;flex-wrap:wrap}
+.rel-bloco{display:flex;flex-direction:column;gap:20px}
+.prev-topo{padding:14px 20px 0;display:flex;flex-wrap:wrap;gap:12px 20px;align-items:flex-end}
+.prev-topo .field{margin:0;flex:1;min-width:220px;max-width:360px}
+.prev-topo select{width:100%;padding:11px;border:1px solid var(--bdi);border-radius:8px;font-size:.9rem;background:var(--card);color:var(--d)}
+.frase-prev{padding:14px 20px 0;font-size:.95rem;line-height:1.5}
+.frase-prev:empty{display:none}
+.prev-numeros{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:12px;padding:14px 20px 0}
+.prev-numeros:empty{display:none}
+.prev-bloco{border:1px solid var(--bd);border-radius:8px;padding:10px 14px}
+.prev-bloco .pb-rot{display:block;font-size:.78rem;color:var(--l);font-weight:600}
+.prev-bloco strong{display:block;font-size:1.15rem;font-variant-numeric:tabular-nums;margin-top:2px}
+.prev-bloco .pb-faixa{display:block;font-size:.8rem;color:var(--l);font-variant-numeric:tabular-nums}
+html.hc .prev-bloco{border:2px solid #fff}
+.metodo{padding:0 20px 14px;font-size:.8rem}
+.metodo:empty{display:none}
+.grafico-wrap.alto{height:300px}
+.cabecalho-impressao{display:none}
+tr.previsto td{color:var(--l)}
+
+/* Impressão / "Salvar como PDF" (botão da tela Relatórios) */
+@media print{
+  body{background:#fff}
+  .app{display:block}
+  .sb,.acess,.pular,.hd > div,.tempo-real,.barra-rel,details.tabela-dados > summary,.aviso:empty{display:none!important}
+  .mc{margin-left:0;padding:0;gap:14px}
+  .cd,.stat{box-shadow:none;border:1px solid #999;break-inside:avoid}
+  .cabecalho-impressao{display:block;font-size:.85rem;color:#333}
+  .grafico-wrap,.grafico-wrap.alto{height:240px}
+  .tabela-wrap{overflow:visible}
+}
 .barra-produtos select{width:100%;padding:11px;border:1px solid var(--bdi);border-radius:8px;font-size:.9rem;background:var(--card);color:var(--d)}
 
 /* ===== BARRA DE ACESSIBILIDADE ===== */
@@ -669,6 +709,127 @@ html.hc .acess button[aria-pressed="true"]{background:#FFD400;color:#000}
 <div class="lista-compras" id="lista-pedidos"></div>
 </section>
 
+<!-- ===== TELA: RELATÓRIOS (agricultor; admin vê o impacto da plataforma) ===== -->
+<section class="tela hidden" id="tela-relatorios" aria-labelledby="titulo">
+<div class="barra-produtos barra-rel">
+<div class="filtros" id="filtros-rel" role="group" aria-label="Período dos relatórios">
+<span class="rotulo" aria-hidden="true">Período:</span>
+<button type="button" data-meses="3" aria-pressed="false">3 meses</button>
+<button type="button" data-meses="6" aria-pressed="false">6 meses</button>
+<button type="button" data-meses="12" aria-pressed="true">12 meses</button>
+</div>
+<div class="acoes-rel">
+<button type="button" class="acao btn-csv" onclick="baixarCsvRelatorio()"><span aria-hidden="true">⬇</span> Baixar dados (CSV)</button>
+<button type="button" class="acao btn-csv" onclick="imprimirRelatorio()"><span aria-hidden="true">🖨</span> Imprimir ou salvar em PDF</button>
+</div>
+</div>
+<div class="aviso" id="aviso-rel" role="status"></div>
+<p class="cabecalho-impressao" id="cab-impressao"></p>
+
+<div class="stats">
+<div class="stat"><div class="ic" aria-hidden="true" id="r1-ic">💰</div><div><h3 id="r1-valor">-</h3><p id="r1-rotulo">Receita</p><p class="delta" id="r1-delta"></p></div></div>
+<div class="stat"><div class="ic" aria-hidden="true" id="r2-ic">🧾</div><div><h3 id="r2-valor">-</h3><p id="r2-rotulo">Valor médio por pedido</p><p class="delta" id="r2-delta"></p></div></div>
+<div class="stat"><div class="ic" aria-hidden="true" id="r3-ic">🗑️</div><div><h3 id="r3-valor">-</h3><p id="r3-rotulo">Perdas</p><p class="delta" id="r3-delta"></p></div></div>
+<div class="stat"><div class="ic" aria-hidden="true" id="r4-ic">🔮</div><div><h3 id="r4-valor">-</h3><p id="r4-rotulo">Previsão</p><p class="delta" id="r4-delta"></p></div></div>
+</div>
+
+<!-- Agricultor -->
+<div class="rel-bloco" id="rel-agricultor">
+<div class="cd">
+<div class="cd-h"><h2 id="tit-prev">Previsão de vendas</h2><p>Próximas 12 semanas (cerca de 3 meses), a partir do histórico de vendas no app e fora dele</p></div>
+<div class="prev-topo">
+<div class="field"><label for="rel-produto">Prever</label><select id="rel-produto"></select></div>
+</div>
+<p class="frase-prev" id="frase-prev" aria-live="polite"></p>
+<div class="prev-numeros" id="prev-numeros"></div>
+<div class="grafico-wrap alto" id="wrap-prev"><canvas id="graf-prev" role="img" aria-label="Gráfico da previsão de vendas"></canvas></div>
+<p class="vazio hidden" id="vazio-prev"></p>
+<p class="obs metodo" id="metodo-prev"></p>
+<details class="tabela-dados">
+<summary>Ver os dados do gráfico em tabela</summary>
+<div class="tabela-wrap">
+<table aria-labelledby="tit-prev">
+<thead><tr><th scope="col">Semana</th><th scope="col" class="num">Vendido</th><th scope="col" class="num">Previsto</th><th scope="col" class="num">Faixa provável</th></tr></thead>
+<tbody id="tab-prev"></tbody>
+</table>
+</div>
+</details>
+</div>
+
+<div class="cd">
+<div class="cd-h"><h2 id="tit-plano">Previsão por produto e plano de colheita</h2><p>Próximas 4 semanas · quanto colher = previsão − estoque atual, já contando a perda média do produto</p></div>
+<div class="tabela-wrap">
+<table aria-labelledby="tit-plano">
+<thead><tr><th scope="col">Produto</th><th scope="col" class="num">Previsão (4 semanas)</th><th scope="col" class="num">Estoque</th><th scope="col" class="num">Perda média</th><th scope="col" class="num">Colher / produzir</th><th scope="col">Tendência</th><th scope="col">Confiança</th></tr></thead>
+<tbody id="tab-plano"></tbody>
+</table>
+</div>
+</div>
+
+<div class="cd">
+<div class="cd-h"><h2 id="tit-fat">Faturamento por mês</h2><p id="sub-fat"></p></div>
+<div class="grafico-wrap" id="wrap-fat"><canvas id="graf-fat" role="img" aria-label="Gráfico do faturamento por mês"></canvas></div>
+<p class="vazio hidden" id="vazio-fat"></p>
+<div class="tabela-wrap">
+<table aria-labelledby="tit-fat">
+<thead><tr><th scope="col">Mês</th><th scope="col" class="num">Pedidos</th><th scope="col" class="num">No app</th><th scope="col" class="num">Fora do app (estimado)</th><th scope="col" class="num">Total</th><th scope="col" class="num">Variação</th></tr></thead>
+<tbody id="tab-fat"></tbody>
+</table>
+</div>
+</div>
+
+<div class="dash-grid">
+<div class="cd">
+<div class="cd-h"><h2 id="tit-abc">Produtos que mais rendem (curva ABC)</h2><p>Classe A: os produtos que somam até 80% da receita do período</p></div>
+<div class="tabela-wrap">
+<table aria-labelledby="tit-abc">
+<thead><tr><th scope="col">Produto</th><th scope="col" class="num">Receita</th><th scope="col" class="num">% do total</th><th scope="col" class="num">% acumulado</th><th scope="col">Classe</th></tr></thead>
+<tbody id="tab-abc"></tbody>
+</table>
+</div>
+</div>
+<div class="cd">
+<div class="cd-h"><h2 id="tit-perdas">Perdas e outras saídas</h2><p id="sub-perdas"></p></div>
+<div class="tabela-wrap">
+<table aria-labelledby="tit-perdas">
+<thead><tr><th scope="col">Produto</th><th scope="col" class="num">Perdido</th><th scope="col" class="num">Valor perdido</th><th scope="col" class="num">% perdido</th><th scope="col" class="num">Doação e consumo</th></tr></thead>
+<tbody id="tab-perdas"></tbody>
+</table>
+</div>
+</div>
+</div>
+</div>
+
+<!-- Administrador -->
+<div class="rel-bloco hidden" id="rel-admin">
+<div class="cd">
+<div class="cd-h"><h2 id="tit-adm">Renda gerada para a agricultura familiar</h2><p>Pedidos confirmados ou entregues em toda a plataforma, por mês, com a previsão dos próximos meses</p></div>
+<p class="frase-prev" id="frase-adm" aria-live="polite"></p>
+<div class="grafico-wrap alto" id="wrap-adm"><canvas id="graf-adm" role="img" aria-label="Gráfico da renda gerada por mês"></canvas></div>
+<p class="vazio hidden" id="vazio-adm"></p>
+<p class="obs metodo" id="metodo-adm"></p>
+<details class="tabela-dados">
+<summary>Ver os dados do gráfico em tabela</summary>
+<div class="tabela-wrap">
+<table aria-labelledby="tit-adm">
+<thead><tr><th scope="col">Mês</th><th scope="col" class="num">Renda gerada</th><th scope="col" class="num">Previsto</th><th scope="col" class="num">Faixa provável</th><th scope="col" class="num">Agricultores com venda</th></tr></thead>
+<tbody id="tab-adm"></tbody>
+</table>
+</div>
+</details>
+</div>
+<div class="cd">
+<div class="cd-h"><h2 id="tit-ranking">Renda por agricultor</h2><p id="sub-ranking"></p></div>
+<div class="tabela-wrap">
+<table aria-labelledby="tit-ranking">
+<thead><tr><th scope="col">Agricultor</th><th scope="col">Município</th><th scope="col" class="num">Pedidos</th><th scope="col" class="num">Renda gerada</th><th scope="col" class="num">% da plataforma</th></tr></thead>
+<tbody id="tab-ranking"></tbody>
+</table>
+</div>
+</div>
+</div>
+</section>
+
 <!-- ===== TELAS AINDA NÃO CONSTRUÍDAS ===== -->
 <section class="tela hidden" id="tela-em-breve" aria-labelledby="titulo">
 <div class="em-breve"><strong id="em-breve-titulo">Em construção</strong>Esta tela entra na próxima etapa do cronograma.</div>
@@ -800,6 +961,7 @@ function traduzErro(msg) {
   if (msg.includes('foreign key'))               return 'Este produto já tem pedidos e não pode ser apagado. Use "Arquivar".';
   if (/ajustar_estoque/.test(msg))               return 'Para registrar movimentações, rode o script 03-estoque.sql no Supabase.';
   if (/rastreio_publico/.test(msg))              return 'A página de rastreio precisa do script 05-rastreabilidade.sql no Supabase.';
+  if (/relatorio_impacto/.test(msg))             return 'O relatório da plataforma precisa do script 06-relatorios.sql no Supabase.';
   if (/(grupo|entrega_|observacao|definir_minha_localizacao)/.test(msg) && /(column|function|schema cache)/i.test(msg))
                                                  return 'Para fazer pedidos, rode o script 04-marketplace.sql no Supabase.';
   return msg;
@@ -1048,7 +1210,7 @@ const MENUS = {
     { id: 'relatorios', ic: '📈', nome: 'Relatórios' }
   ]
 };
-const TELAS_PRONTAS = ['dashboard', 'produtos', 'estoque', 'pedidos', 'marketplace', 'meus-pedidos'];
+const TELAS_PRONTAS = ['dashboard', 'produtos', 'estoque', 'pedidos', 'marketplace', 'meus-pedidos', 'relatorios'];
 let TELA_ATUAL = 'dashboard';
 
 function itensDoMenu() { return MENUS[MEU_USUARIO.perfil] || MENUS.agricultor; }
@@ -1086,6 +1248,10 @@ function irPara(tela) {
   if (item.id === 'dashboard' && PAINEL.grafico) PAINEL.grafico.resize(); // canvas estava escondido
   if (item.id === 'estoque' && MEU_USUARIO) carregarEstoque();          // histórico só é buscado quando a tela abre
   if (item.id === 'pedidos' && MEU_USUARIO) carregarPedidos();
+  if (item.id === 'relatorios' && MEU_USUARIO) {
+    Object.values(REL.graficos).forEach(g => g.resize());
+    carregarRelatorios();
+  }
 }
 
 async function abrirApp() {
@@ -1107,6 +1273,7 @@ async function abrirApp() {
   configurarEstoque();
   configurarLoja();
   configurarPedidos();
+  configurarRelatorios();
   document.getElementById('tela-auth').classList.add('hidden');
   document.getElementById('tela-app').classList.remove('hidden');
   irPara('dashboard');
@@ -1123,6 +1290,7 @@ async function fazerSair() {
   MEU_USUARIO = null;
   PRODUTOS = [];
   limparPainel();
+  limparRelatorios();
   ['vitrine', 'itens-carrinho', 'lista-compras'].forEach(id => { document.getElementById(id).innerHTML = ''; });
   document.getElementById('tabela').innerHTML = '<tr><td colspan="4">Carregando do banco...</td></tr>';
   document.getElementById('tela-app').classList.add('hidden');
@@ -1138,17 +1306,19 @@ async function carregarTudo() {
   const secoes = document.querySelectorAll('.tela');
   secoes.forEach(s => s.classList.add('atualizando'));
   try {
-    const [, dadosPainel, dadosEstoque, dadosLoja, dadosPedidos] = await Promise.all([
+    const [, dadosPainel, dadosEstoque, dadosLoja, dadosPedidos, dadosRel] = await Promise.all([
       carregarProdutos(),
       buscarDadosPainel(),
       TELA_ATUAL === 'estoque' ? buscarEstoque() : Promise.resolve(null),
       MEU_USUARIO.perfil === 'comprador' ? buscarLoja() : Promise.resolve(null),
-      TELA_ATUAL === 'pedidos' ? buscarPedidos() : Promise.resolve(null)
+      TELA_ATUAL === 'pedidos' ? buscarPedidos() : Promise.resolve(null),
+      TELA_ATUAL === 'relatorios' ? buscarRelatorios() : Promise.resolve(null)
     ]);
     if (MEU_USUARIO) renderPainel(dadosPainel);
     if (MEU_USUARIO && dadosEstoque) aplicarEstoque(dadosEstoque);
     if (MEU_USUARIO && dadosLoja) aplicarLoja(dadosLoja);
     if (MEU_USUARIO && dadosPedidos) aplicarPedidos(dadosPedidos);
+    if (MEU_USUARIO && dadosRel) aplicarRelatorios(dadosRel);
   } catch (e) {
     console.error(e);
     document.getElementById('aviso-dash').textContent = 'Não foi possível atualizar o painel agora. Verifique a conexão.';
@@ -1562,26 +1732,32 @@ function renderHistorico(lista) {
   }).join('');
 }
 
-// CSV para Excel em português: separador ";" e BOM para os acentos abrirem certo
-function baixarCsv() {
-  const lista = movimentosFiltrados();
-  if (!lista.length) { document.getElementById('aviso-estoque').textContent = 'Não há movimentações para exportar neste filtro.'; return; }
-  // Texto começando com = + - @ vira fórmula no Excel: um apóstrofo na frente impede isso
-  const texto = v => { let s = String(v ?? ''); if (/^[=+\-@]/.test(s)) s = "'" + s; return '"' + s.replace(/"/g, '""') + '"'; };
-  const quando = iso => new Intl.DateTimeFormat('sv-SE', { timeZone: TZ, year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' }).format(new Date(iso));
-  const linhas = ['data_hora;produto;tipo;motivo;quantidade;unidade;estoque_depois;pedido'];
-  lista.slice().reverse().forEach(m => linhas.push([
-    texto(quando(m.criado_em)), texto(m.produto_nome), texto(m.tipo), texto(m.motivo || ''),
-    m.quantidade, texto(m.unidade || ''), m.estoque_apos, m.pedido_id ?? ''
-  ].join(';')));
+// CSV para Excel em português: separador ";" e BOM para os acentos abrirem certo.
+// Texto começando com = + - @ vira fórmula no Excel: um apóstrofo na frente impede isso.
+function celulaCsv(v) { let s = String(v ?? ''); if (/^[=+\-@]/.test(s)) s = "'" + s; return '"' + s.replace(/"/g, '""') + '"'; }
+// Número com vírgula decimal (o Excel em português lê "12,5" como número; "12.5" vira texto)
+function numeroCsv(v, casas = 2) { return Number(v || 0).toFixed(casas).replace('.', ','); }
+function salvarCsv(nomeArquivo, linhas) {
   const blob = new Blob(['﻿' + linhas.join('\r\n')], { type: 'text/csv;charset=utf-8' });
   const link = document.createElement('a');
   link.href = URL.createObjectURL(blob);
-  link.download = `agronexo-estoque-${hojeISO()}-${ESTOQUE.dias}dias.csv`;
+  link.download = nomeArquivo;
   document.body.appendChild(link);
   link.click();
   link.remove();
   setTimeout(() => URL.revokeObjectURL(link.href), 1000);
+}
+
+function baixarCsv() {
+  const lista = movimentosFiltrados();
+  if (!lista.length) { document.getElementById('aviso-estoque').textContent = 'Não há movimentações para exportar neste filtro.'; return; }
+  const quando = iso => new Intl.DateTimeFormat('sv-SE', { timeZone: TZ, year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' }).format(new Date(iso));
+  const linhas = ['data_hora;produto;tipo;motivo;quantidade;unidade;estoque_depois;pedido'];
+  lista.slice().reverse().forEach(m => linhas.push([
+    celulaCsv(quando(m.criado_em)), celulaCsv(m.produto_nome), celulaCsv(m.tipo), celulaCsv(m.motivo || ''),
+    m.quantidade, celulaCsv(m.unidade || ''), m.estoque_apos, m.pedido_id ?? ''
+  ].join(';')));
+  salvarCsv(`agronexo-estoque-${hojeISO()}-${ESTOQUE.dias}dias.csv`, linhas);
 }
 
 document.getElementById('m-operacao').addEventListener('click', (e) => {
@@ -2596,11 +2772,12 @@ function renderPainel(d) {
   renderFeed(d);
 }
 
-function definirKpi(n, ic, rotulo, valor, delta) {
-  document.getElementById(`k${n}-ic`).textContent = ic;
-  document.getElementById(`k${n}-rotulo`).textContent = rotulo;
-  document.getElementById(`k${n}-valor`).textContent = valor;
-  const el = document.getElementById(`k${n}-delta`);
+// prefixo 'k' = cards do Dashboard; 'r' = cards da tela Relatórios
+function definirKpi(n, ic, rotulo, valor, delta, prefixo = 'k') {
+  document.getElementById(`${prefixo}${n}-ic`).textContent = ic;
+  document.getElementById(`${prefixo}${n}-rotulo`).textContent = rotulo;
+  document.getElementById(`${prefixo}${n}-valor`).textContent = valor;
+  const el = document.getElementById(`${prefixo}${n}-delta`);
   el.textContent = '';
   el.className = 'delta';
   if (!delta || !delta.texto) return;
@@ -2858,6 +3035,808 @@ function limparPainel() {
 }
 
 /* ================================================================
+   SEÇÃO 3F — RELATÓRIOS
+   Agricultor: previsão de vendas, plano de colheita, faturamento,
+   curva ABC e perdas. Admin: renda gerada na plataforma (ODS 08).
+   Fontes:
+     • vendas_diarias        → vendas no app (script 02)
+     • movimentacoes_estoque → venda fora do app, perda, doação e consumo (script 03)
+     • relatorio_impacto()   → totais da plataforma, só para o admin (script 06)
+   A previsão é calculada aqui no navegador, com métodos explicáveis
+   (ver prever()), sem biblioteca extra.
+================================================================ */
+const REL = { meses: 12, produto: '', dados: null, calc: null, calcAdmin: null, graficos: {} };
+const SEMANAS_MAX = 104;   // a previsão usa até 2 anos de histórico
+const HORIZONTE = 12;      // semanas previstas (cerca de 3 meses, em 3 blocos de 4)
+const Z80 = 1.2816;        // faixa provável de 80% (curva normal)
+const MESES_CURTOS = ['jan', 'fev', 'mar', 'abr', 'mai', 'jun', 'jul', 'ago', 'set', 'out', 'nov', 'dez'];
+const FMT_DIA_SP = new Intl.DateTimeFormat('en-CA', { timeZone: TZ, year: 'numeric', month: '2-digit', day: '2-digit' });
+// A partir de quantos pontos cada método entra, por granularidade
+const CFG_SEMANAL = { minimo: 4, regressao: 12, sazonal: 52, janela: 8, porMes: 4.345 };
+const CFG_MENSAL  = { minimo: 3, regressao: 6,  sazonal: 24, janela: 6, porMes: 1 };
+const NOME_METODO = {
+  'media-movel': 'média móvel ponderada (o período mais recente pesa mais)',
+  regressao:     'regressão linear (reta de tendência)',
+  sazonal:       'regressão linear com índice sazonal por mês do ano'
+};
+
+/* ---------- Datas ---------- */
+function diasEntre(a, b) { return Math.round((Date.parse(b + 'T00:00:00Z') - Date.parse(a + 'T00:00:00Z')) / 864e5); }
+function mesDoDia(iso) { return Number(iso.slice(5, 7)); }
+function mesDesloc(chave, k) { const [a, m] = chave.split('-').map(Number); return new Date(Date.UTC(a, m - 1 + k, 1)).toISOString().slice(0, 7); }
+function rotuloMes(chave) { const [a, m] = chave.split('-').map(Number); return `${MESES_CURTOS[m - 1]}/${String(a).slice(2)}`; }
+function chavesDeMeses(ultimo, n) { return Array.from({ length: n }, (_, i) => mesDesloc(ultimo, i - n + 1)); }
+function plural(n, um, varios) { return `${numero(n)} ${n === 1 ? um : varios}`; }
+// Previsão e totais grandes em reais inteiros: centavos numa previsão seriam precisão falsa
+function reais(v) { return 'R$ ' + numero(Math.round(v)); }
+
+/* ---------- Previsão ----------
+   O método é escolhido pela quantidade de histórico (y = um valor por semana ou por mês):
+     menos que cfg.minimo → não prevê (melhor não inventar número)
+     até cfg.regressao    → média móvel ponderada
+     até cfg.sazonal      → regressão linear pelos mínimos quadrados (tendência)
+     a partir daí         → regressão + índice sazonal de cada mês do ano
+                            (método da razão para a tendência)
+   A faixa provável (80%) vem do erro do próprio modelo e fica mais larga quanto
+   mais longe no futuro. "meses" traz o mês (1–12) de cada ponto: histórico + futuro. */
+function ajusteLinear(y) {
+  const n = y.length, tm = (n - 1) / 2, ym = y.reduce((a, b) => a + b, 0) / n;
+  let sxx = 0, sxy = 0;
+  y.forEach((v, t) => { sxx += (t - tm) ** 2; sxy += (t - tm) * (v - ym); });
+  const b = sxx ? sxy / sxx : 0, a = ym - b * tm;
+  const sse = y.reduce((s, v, t) => s + (v - (a + b * t)) ** 2, 0);
+  return { a, b, n, tm, sxx: sxx || 1, s: Math.sqrt(sse / Math.max(1, n - 2)) };
+}
+
+function mediaPonderada(lista, janela) {
+  const k = Math.min(janela, lista.length);
+  let soma = 0, pesos = 0;
+  for (let i = 0; i < k; i++) { const peso = k - i; soma += peso * lista[lista.length - 1 - i]; pesos += peso; }
+  return pesos ? soma / pesos : 0;
+}
+
+function prever(y, h, meses, cfg) {
+  const n = y.length;
+  if (n < cfg.minimo) return { metodo: 'insuficiente', n };
+  if (!y.some(v => v > 0)) {
+    const zero = Array(h).fill(0);
+    return { metodo: 'sem-vendas', n, ponto: zero, meia: zero, baixo: zero, alto: zero, tendencia: null };
+  }
+  let metodo, ponto = [], meia = [], tendencia = null, sigma;
+  if (n < cfg.regressao) {
+    metodo = 'media-movel';
+    const erros = [];   // erro de prever cada ponto usando só os anteriores
+    for (let t = 2; t < n; t++) erros.push(y[t] - mediaPonderada(y.slice(0, t), cfg.janela));
+    sigma = Math.sqrt(erros.reduce((s, e) => s + e * e, 0) / Math.max(1, erros.length));
+    const m = mediaPonderada(y, cfg.janela), k = Math.min(cfg.janela, n);
+    for (let j = 1; j <= h; j++) { ponto.push(m); meia.push(Z80 * sigma * Math.sqrt(1 + j / k)); }
+  } else {
+    let indice = null, serie = y;
+    if (n >= cfg.sazonal) {
+      metodo = 'sazonal';
+      const tend = ajusteLinear(y);
+      const soma = Array(13).fill(0), cont = Array(13).fill(0);
+      y.forEach((v, t) => {
+        const esperado = tend.a + tend.b * t;
+        if (esperado > 0) { soma[meses[t]] += v / esperado; cont[meses[t]]++; }
+      });
+      indice = soma.map((s, m) => (cont[m] ? s / cont[m] : 1));
+      const media = indice.slice(1).reduce((a, b) => a + b, 0) / 12;   // média dos 12 meses = 1
+      indice = indice.map(v => Math.min(5, Math.max(0.05, v / media)));
+      serie = y.map((v, t) => v / indice[meses[t]]);                   // série sem a sazonalidade
+    } else {
+      metodo = 'regressao';
+    }
+    const r = ajusteLinear(serie);
+    for (let j = 0; j < h; j++) {
+      const t = n + j, f = indice ? indice[meses[t]] : 1;
+      ponto.push((r.a + r.b * t) * f);
+      // intervalo de predição da regressão: s · √(1 + 1/n + (t − t̄)² / Sxx)
+      meia.push(Z80 * r.s * Math.sqrt(1 + 1 / n + (t - r.tm) ** 2 / r.sxx) * f);
+    }
+    const nivel = r.a + r.b * (n - 1);
+    tendencia = nivel > 0 ? r.b * cfg.porMes / nivel : null;   // variação por mês, em fração do nível atual
+    sigma = r.s;
+  }
+  ponto = ponto.map(v => Math.max(0, v));
+  return faixas({ metodo, n, ponto, meia, tendencia, sigma });
+}
+function faixas(p) {
+  return { ...p, baixo: p.ponto.map((v, j) => Math.max(0, v - p.meia[j])), alto: p.ponto.map((v, j) => v + p.meia[j]) };
+}
+
+// "Acerto": esconde os últimos H pontos, prevê com o resto e compara com o que aconteceu.
+// Erro = soma dos erros ÷ soma do real (WAPE), que funciona mesmo com semanas sem venda.
+function testarPrevisao(y, meses, cfg, H) {
+  if (y.length < cfg.minimo + H) return null;
+  const real = y.slice(-H), p = prever(y.slice(0, -H), H, meses, cfg);
+  const total = real.reduce((a, b) => a + b, 0);
+  if (!p.ponto || total <= 0) return null;
+  const erros = real.map((v, i) => v - p.ponto[i]);
+  return {
+    erro: erros.reduce((s, e) => s + Math.abs(e), 0) / total,
+    rmse: Math.sqrt(erros.reduce((s, e) => s + e * e, 0) / H),
+    metodo: p.metodo
+  };
+}
+// O erro medido dentro do próprio histórico costuma ser otimista (o modelo já "viu" aqueles dados).
+// Se o teste com semanas escondidas errou mais, a faixa é alargada na mesma proporção.
+function calibrarFaixa(p, teste) {
+  if (!p.ponto || !teste || !(p.sigma > 0) || teste.rmse <= p.sigma) return p;
+  const k = teste.rmse / p.sigma;
+  return faixas({ ...p, meia: p.meia.map(e => e * k), ampliada: k });
+}
+
+// Soma de várias semanas previstas: os erros se compensam em parte (raiz da soma dos quadrados)
+function somarBloco(p, de, ate) {
+  const ponto = p.ponto.slice(de, ate).reduce((a, b) => a + b, 0);
+  const meia = Math.sqrt(p.meia.slice(de, ate).reduce((s, e) => s + e * e, 0));
+  return { ponto, baixo: Math.max(0, ponto - meia), alto: ponto + meia };
+}
+function confianca(teste) {
+  if (!teste) return ['b-n', 'Sem teste'];
+  if (teste.erro <= 0.2) return ['b-g', 'Boa'];
+  if (teste.erro <= 0.4) return ['b-o', 'Média'];
+  return ['b-r', 'Baixa'];
+}
+// HTML: a seta é decorativa; a palavra (alta/queda) diz a direção
+function textoTendencia(t) {
+  if (t == null || !isFinite(t)) return '—';
+  if (Math.abs(t) < 0.02) return 'Estável';
+  const pct = numero(Math.abs(t) * 100);
+  return t > 0 ? `<span aria-hidden="true">▲</span> Alta de ${pct}% ao mês` : `<span aria-hidden="true">▼</span> Queda de ${pct}% ao mês`;
+}
+function fraseTendencia(t) {
+  if (t == null || !isFinite(t)) return '';
+  if (Math.abs(t) < 0.02) return ' As vendas estão estáveis.';
+  const pct = numero(Math.abs(t) * 100);
+  return t > 0 ? ` A tendência é de alta: cerca de ${pct}% a mais por mês.` : ` A tendência é de queda: cerca de ${pct}% a menos por mês.`;
+}
+
+/* ---------- Busca ---------- */
+// O Supabase devolve no máximo 1000 linhas por consulta: busca página por página
+async function buscarPaginado(montar) {
+  const PAGINA = 1000, todas = [];
+  for (let de = 0; de < 30000; de += PAGINA) {
+    const { data, error } = await montar().range(de, de + PAGINA - 1);
+    if (error) return { data: null, error };
+    todas.push(...(data || []));
+    if (!data || data.length < PAGINA) break;
+  }
+  return { data: todas, error: null };
+}
+
+async function buscarRelatorios() {
+  if (MEU_USUARIO.perfil === 'admin') {
+    const [impacto, usuarios] = await Promise.all([
+      db.rpc('relatorio_impacto', { p_meses: 25 }),   // 24 meses completos + o atual
+      db.from('usuarios').select('perfil, cidade, uf')
+    ]);
+    return { admin: true, impacto, usuarios };
+  }
+  const inicio = somaDias(hojeISO(), -750);   // ~2 anos: previsão e comparação com o período anterior
+  const [vendas, saidas] = await Promise.all([
+    buscarPaginado(() => db.from('vendas_diarias').select('dia, produto_id, pedidos, quantidade, receita')
+      .eq('agricultor_id', MEU_USUARIO.id).gte('dia', inicio).order('dia').order('produto_id')),
+    buscarPaginado(() => db.from('movimentacoes_estoque').select('id, produto_id, produto_nome, unidade, motivo, quantidade, criado_em')
+      .eq('agricultor_id', MEU_USUARIO.id).eq('tipo', 'ajuste').gte('criado_em', inicio + 'T00:00:00-03:00').order('id'))
+  ]);
+  return { admin: false, vendas, saidas };
+}
+function aplicarRelatorios(res) { REL.dados = res; renderRelatorios(); }
+async function carregarRelatorios() {
+  const tela = document.getElementById('tela-relatorios');
+  tela.classList.add('atualizando');
+  try { aplicarRelatorios(await buscarRelatorios()); }
+  catch (e) {
+    console.error(e);
+    document.getElementById('aviso-rel').textContent = 'Não foi possível carregar os relatórios agora. Verifique a conexão.';
+  } finally { tela.classList.remove('atualizando'); }
+}
+
+function configurarRelatorios() {
+  const admin = MEU_USUARIO.perfil === 'admin';
+  limparRelatorios();
+  document.getElementById('rel-agricultor').classList.toggle('hidden', admin);
+  document.getElementById('rel-admin').classList.toggle('hidden', !admin);
+}
+function limparRelatorios() {
+  Object.values(REL.graficos).forEach(g => g.destroy());
+  REL.graficos = {};
+  REL.dados = REL.calc = REL.calcAdmin = null;
+  REL.produto = '';
+  [1, 2, 3, 4].forEach(n => {
+    document.getElementById(`r${n}-valor`).textContent = '-';
+    document.getElementById(`r${n}-delta`).textContent = '';
+  });
+  ['tab-prev', 'tab-plano', 'tab-fat', 'tab-abc', 'tab-perdas', 'tab-adm', 'tab-ranking', 'prev-numeros'].forEach(id => { document.getElementById(id).innerHTML = ''; });
+  ['frase-prev', 'metodo-prev', 'frase-adm', 'metodo-adm', 'aviso-rel', 'sub-fat', 'sub-perdas', 'sub-ranking'].forEach(id => { document.getElementById(id).textContent = ''; });
+}
+
+/* ---------- Base: produto → dia → totais ---------- */
+function vazioDia() { return { app: 0, receita: 0, pedidos: 0, fora: 0, perda: 0, outras: 0 }; }
+
+function prepararBase(d) {
+  const hoje = hojeISO();
+  const diario = new Map(), nomes = new Map();
+  PRODUTOS.forEach(p => nomes.set(p.id, { nome: p.nome, unidade: p.unidade }));
+  const pegar = (id, dia) => {
+    let porDia = diario.get(id);
+    if (!porDia) diario.set(id, porDia = new Map());
+    let x = porDia.get(dia);
+    if (!x) porDia.set(dia, x = vazioDia());
+    return x;
+  };
+  ((d.vendas && d.vendas.data) || []).forEach(r => {
+    const x = pegar(r.produto_id, r.dia);
+    x.app += Number(r.quantidade); x.receita += Number(r.receita); x.pedidos += Number(r.pedidos);
+  });
+  ((d.saidas && d.saidas.data) || []).forEach(m => {
+    // correção de lançamento não é venda nem perda; saída sem motivo (edição do produto) também fica de fora
+    if (m.produto_id == null || !['venda_fora', 'perda', 'doacao', 'consumo'].includes(m.motivo)) return;
+    if (!nomes.has(m.produto_id)) nomes.set(m.produto_id, { nome: m.produto_nome + ' (excluído)', unidade: m.unidade || '' });
+    const x = pegar(m.produto_id, FMT_DIA_SP.format(new Date(m.criado_em)));
+    const q = -Number(m.quantidade);
+    if (m.motivo === 'venda_fora') x.fora += q;
+    else if (m.motivo === 'perda') x.perda += q;
+    else x.outras += q;
+  });
+  return { hoje, ontem: somaDias(hoje, -1), diario, nomes, precos: new Map(PRODUTOS.map(p => [p.id, Number(p.preco)])) };
+}
+
+// Semanas completas de 7 dias terminando ontem (o dia de hoje ainda não acabou)
+function semanasDesde(inicio, fim) {
+  const n = Math.max(0, Math.min(SEMANAS_MAX, Math.floor((diasEntre(inicio, fim) + 1) / 7)));
+  return Array.from({ length: n }, (_, i) => { const f = somaDias(fim, -7 * (n - 1 - i)); return { ini: somaDias(f, -6), fim: f }; });
+}
+function inicioDe(ids, base) {
+  let ini = null;
+  ids.forEach(id => {
+    const p = PRODUTOS.find(x => x.id === id);
+    if (p && p.criado_em) { const c = FMT_DIA_SP.format(new Date(p.criado_em)); if (!ini || c < ini) ini = c; }
+    const porDia = base.diario.get(id);
+    if (porDia) porDia.forEach((_, dia) => { if (!ini || dia < ini) ini = dia; });
+  });
+  return ini;
+}
+const QTD = x => x.app + x.fora;                            // demanda em quantidade: app + fora do app
+const RECEITA = (x, preco) => x.receita + x.fora * preco;   // R$: app (preço da venda) + fora (preço atual)
+
+// ids: produtos somados na série; valor(x, preço) dá o número de cada dia
+function analisar(ids, valor, base) {
+  const semanas = semanasDesde(inicioDe(ids, base) || base.hoje, base.ontem);
+  const futuras = Array.from({ length: HORIZONTE }, (_, j) => { const ini = somaDias(base.hoje, 7 * j); return { ini, fim: somaDias(ini, 6) }; });
+  const meses = [...semanas, ...futuras].map(s => mesDoDia(somaDias(s.ini, 3)));
+  const y = Array(semanas.length).fill(0);
+  if (semanas.length) {
+    const ini = semanas[0].ini, fim = semanas[semanas.length - 1].fim;
+    ids.forEach(id => {
+      const porDia = base.diario.get(id), preco = base.precos.get(id) || 0;
+      if (porDia) porDia.forEach((x, dia) => { if (dia >= ini && dia <= fim) y[Math.floor(diasEntre(ini, dia) / 7)] += valor(x, preco); });
+    });
+  }
+  const teste = testarPrevisao(y, meses, CFG_SEMANAL, 4);
+  return { semanas, futuras, y, teste, p: calibrarFaixa(prever(y, HORIZONTE, meses, CFG_SEMANAL), teste) };
+}
+function analiseDoProduto(id) {
+  const c = REL.calc;
+  if (!c.analises.has(id)) c.analises.set(id, analisar([id], QTD, c.base));
+  return c.analises.get(id);
+}
+
+// Período dos cards: do dia 1º do primeiro mês até hoje; o anterior tem o mesmo número de dias
+function periodoAtual(base) {
+  const ini = mesDesloc(base.hoje.slice(0, 7), -(REL.meses - 1)) + '-01';
+  const dias = diasEntre(ini, base.hoje) + 1;
+  return { ini, fim: base.hoje, dias, antIni: somaDias(ini, -dias), antFim: somaDias(ini, -1) };
+}
+function somarIntervalo(base, ini, fim) {
+  const porProduto = new Map();
+  const geral = { receita: 0, pedidos: 0, foraR: 0, perdaR: 0, total: 0 };
+  base.diario.forEach((porDia, id) => {
+    const t = vazioDia();
+    porDia.forEach((x, dia) => { if (dia >= ini && dia <= fim) for (const k in t) t[k] += x[k]; });
+    const preco = base.precos.get(id);             // produto excluído: sem preço
+    t.foraR = preco != null ? t.fora * preco : 0;
+    t.perdaR = preco != null ? t.perda * preco : null;
+    t.total = t.receita + t.foraR;
+    porProduto.set(id, t);
+    geral.receita += t.receita; geral.pedidos += t.pedidos; geral.foraR += t.foraR;
+    geral.perdaR += t.perdaR || 0; geral.total += t.total;
+  });
+  return { porProduto, geral };
+}
+// Perdas ÷ tudo o que saiu (app, fora, perda, doação/consumo), nas últimas 12 semanas
+function taxaPerda(porDia, base) {
+  const ini = somaDias(base.ontem, -83);
+  let perda = 0, saiu = 0;
+  if (porDia) porDia.forEach((x, dia) => { if (dia >= ini && dia <= base.ontem) { perda += x.perda; saiu += x.app + x.fora + x.perda + x.outras; } });
+  return saiu > 0 ? perda / saiu : 0;
+}
+
+/* ---------- Gráficos ---------- */
+function fonteGrafico() {
+  const tamanho = Math.round(11 * parseFloat(getComputedStyle(document.documentElement).fontSize) / 16);
+  return { family: "'Segoe UI', system-ui, sans-serif", size: tamanho };
+}
+function opcoesRel(eixo, empilhado) {
+  const fonte = fonteGrafico();
+  const hc = document.documentElement.classList.contains('hc');
+  return {
+    responsive: true,
+    maintainAspectRatio: false,
+    animation: matchMedia('(prefers-reduced-motion: reduce)').matches ? false : { duration: 250 },
+    interaction: { mode: 'index', intersect: false },
+    plugins: {
+      legend: {
+        display: true, position: 'top', align: 'start',
+        labels: { color: css('--l'), font: fonte, boxWidth: 22, boxHeight: 10, padding: 14, filter: item => !item.text.startsWith('_') }
+      },
+      tooltip: {
+        backgroundColor: '#1F2933', borderColor: hc ? '#fff' : '#1F2933', borderWidth: 1, padding: 10, boxPadding: 4,
+        titleFont: fonte, bodyFont: fonte, footerFont: fonte
+      }
+    },
+    scales: {
+      x: { stacked: empilhado, grid: { display: false }, border: { color: css('--grade') },
+           ticks: { color: css('--l'), font: fonte, maxRotation: 0, autoSkipPadding: 16 } },
+      y: { stacked: empilhado, beginAtZero: true, border: { display: false }, grid: { color: css('--grade') },
+           ticks: { color: css('--l'), font: fonte, maxTicksLimit: 5, callback: eixo } }
+    }
+  };
+}
+// Mostra o gráfico ou o aviso no lugar dele (sem dados, ou Chart.js não carregou)
+function areaGrafico(chave, wrapId, vazioId, temDados, textoVazio) {
+  const ok = temDados && typeof Chart !== 'undefined';
+  document.getElementById(wrapId).classList.toggle('hidden', !ok);
+  const vazio = document.getElementById(vazioId);
+  vazio.classList.toggle('hidden', ok);
+  vazio.textContent = ok ? '' : temDados ? 'O gráfico não carregou (sem internet?). Os valores estão na tabela.' : textoVazio;
+  if (!ok && REL.graficos[chave]) { REL.graficos[chave].destroy(); delete REL.graficos[chave]; }
+  return ok;
+}
+function graficoRel(chave, canvasId, tipo, dados, opcoes, aria) {
+  const canvas = document.getElementById(canvasId);
+  canvas.setAttribute('aria-label', aria);
+  const g = REL.graficos[chave];
+  if (g) { g.data = dados; g.options = opcoes; g.update(); return; }   // atualiza sem piscar
+  REL.graficos[chave] = new Chart(canvas, { type: tipo, data: dados, options: opcoes });
+}
+// Histórico em linha contínua; previsão tracejada, saindo do último ponto real, com a faixa provável
+function desenharLinhaPrevisao(chave, canvasId, o) {
+  const cor = css('--grafico');
+  const linha = { borderColor: cor, backgroundColor: cor, borderWidth: 2, pointRadius: 0, pointHoverRadius: 5, pointHitRadius: 8, tension: 0.25 };
+  const faixa = { borderWidth: 0, pointRadius: 0, pointHoverRadius: 0, pointHitRadius: 0 };
+  const dados = {
+    labels: o.rotulos,
+    datasets: [
+      { ...linha, label: o.rotuloReal, data: o.real },
+      { ...linha, label: 'Previsão', data: o.prev, borderDash: [6, 4] },
+      { ...faixa, label: '_baixo', data: o.baixo, fill: false },
+      { ...faixa, label: 'Faixa provável (80%)', data: o.alto, backgroundColor: css('--faixa'), fill: '-1' }
+    ]
+  };
+  const opcoes = opcoesRel(o.eixo, false);
+  opcoes.plugins.tooltip.filter = item => item.raw != null && item.dataset.label !== '_baixo'
+    && !(item.dataIndex === o.ultimo && item.datasetIndex !== 0);   // no ponto de junção, só o valor real
+  opcoes.plugins.tooltip.callbacks = {
+    title: itens => o.titulos[itens[0].dataIndex],
+    label: ctx => (ctx.datasetIndex === 3
+      ? `Faixa provável: ${o.fmt(o.baixo[ctx.dataIndex])} a ${o.fmt(o.alto[ctx.dataIndex])}`
+      : `${ctx.dataset.label}: ${o.fmt(ctx.raw)}`)
+  };
+  graficoRel(chave, canvasId, 'line', dados, opcoes, o.aria);
+}
+// Monta as séries do gráfico: histórico + previsão, ligadas no último ponto real
+function seriesPrevisao(yHist, p, h) {
+  const n = yHist.length, nulos = k => Array(Math.max(0, k)).fill(null), ult = yHist[n - 1];
+  if (!p.ponto) return { real: [...yHist, ...nulos(h)], prev: nulos(n + h), baixo: nulos(n + h), alto: nulos(n + h) };
+  return {
+    real: [...yHist, ...nulos(h)],
+    prev: [...nulos(n - 1), ult, ...p.ponto],
+    baixo: [...nulos(n - 1), ult, ...p.baixo],
+    alto: [...nulos(n - 1), ult, ...p.alto]
+  };
+}
+
+/* ---------- Agricultor ---------- */
+function renderRelatorios() {
+  const d = REL.dados;
+  if (!d || !MEU_USUARIO) return;
+  document.querySelectorAll('#filtros-rel button').forEach(b => b.setAttribute('aria-pressed', Number(b.dataset.meses) === REL.meses));
+  if (d.admin) { renderRelAdmin(d); return; }
+  document.getElementById('aviso-rel').textContent = d.vendas.error
+    ? 'Os relatórios precisam do histórico de vendas: rode o script 02-historico-dashboard.sql no Supabase.'
+    : d.saidas.error ? 'Vendas fora do app e perdas aparecem depois dos scripts 02 e 03 no Supabase: por enquanto os números contam só o app.' : '';
+  const base = prepararBase(d);
+  const todosIds = [...new Set([...PRODUTOS.map(p => p.id), ...base.diario.keys()])];
+  const periodo = periodoAtual(base);
+  REL.calc = {
+    base, periodo, analises: new Map(),
+    inicioDados: inicioDe(todosIds, base),
+    todos: analisar(todosIds, RECEITA, base),
+    atual: somarIntervalo(base, periodo.ini, periodo.fim),
+    anterior: somarIntervalo(base, periodo.antIni, periodo.antFim)
+  };
+  preencherProdutosRel();
+  renderKpisRel();
+  renderPrevisaoRel();
+  renderPlano();
+  renderFaturamento();
+  renderAbcPerdas();
+}
+
+function preencherProdutosRel() {
+  const sel = document.getElementById('rel-produto');
+  sel.innerHTML = '';
+  sel.add(new Option('Todos os produtos (receita em R$)', ''));
+  PRODUTOS.filter(p => p.ativo !== false).forEach(p => sel.add(new Option(`${p.nome} (em ${p.unidade})`, String(p.id))));
+  if (![...sel.options].some(o => o.value === REL.produto)) REL.produto = '';
+  sel.value = REL.produto;
+}
+
+function renderKpisRel() {
+  const { atual, anterior, periodo, todos, inicioDados } = REL.calc;
+  const comp = `vs. ${numero(periodo.dias)} dias anteriores`;
+  // Só compara se o histórico cobre o período anterior inteiro (senão a "alta" seria falsa)
+  const comparar = inicioDados && inicioDados <= periodo.antIni;
+  const semBase = { texto: 'sem histórico do período anterior para comparar' };
+  const a = atual.geral, b = anterior.geral;
+  definirKpi(1, '💰', `Receita: ${plural(REL.meses, 'mês', 'meses')}`, reais(a.total),
+             comparar ? variacao(a.total, b.total, true, comp) : semBase, 'r');
+  const medioA = a.pedidos ? a.receita / a.pedidos : 0, medioB = b.pedidos ? b.receita / b.pedidos : 0;
+  definirKpi(2, '🧾', 'Valor médio por pedido no app', a.pedidos ? moeda(medioA) : '-',
+             !a.pedidos ? null : comparar ? variacao(medioA, medioB, true, comp) : semBase, 'r');
+  definirKpi(3, '🗑️', 'Perdas (estimado)', reais(a.perdaR),
+             a.total > 0 ? { texto: `${numero(a.perdaR / a.total * 100, 1)}% da receita` } : null, 'r');
+  if (todos.p.ponto) {
+    const b4 = somarBloco(todos.p, 0, 4);
+    definirKpi(4, '🔮', 'Previsão: próximas 4 semanas', reais(b4.ponto), { texto: `entre ${reais(b4.baixo)} e ${reais(b4.alto)}` }, 'r');
+  } else {
+    definirKpi(4, '🔮', 'Previsão: próximas 4 semanas', '-', { texto: 'precisa de 4 semanas de histórico' }, 'r');
+  }
+}
+
+function renderPrevisaoRel() {
+  const c = REL.calc;
+  const p = REL.produto ? PRODUTOS.find(x => String(x.id) === REL.produto) : null;
+  const a = p ? analiseDoProduto(p.id) : c.todos;
+  const pr = a.p, f = a.futuras;
+  const nome = p ? p.nome : 'as vendas';
+  const fmt = v => (p ? `${numero(v)} ${p.unidade}` : reais(v));
+  const frase = document.getElementById('frase-prev'), blocos = document.getElementById('prev-numeros');
+  const metodo = document.getElementById('metodo-prev'), tabela = document.getElementById('tab-prev');
+
+  if (pr.metodo === 'insuficiente') {
+    frase.textContent = `Ainda não dá para prever ${nome}: são necessárias pelo menos 4 semanas completas de histórico `
+      + `(${a.semanas.length} até agora). Continue registrando as vendas, inclusive as de fora do app, na tela Estoque.`;
+    blocos.innerHTML = '';
+    metodo.textContent = '';
+    tabela.innerHTML = '';
+    areaGrafico('prev', 'wrap-prev', 'vazio-prev', false, 'O gráfico aparece quando houver 4 semanas completas de histórico.');
+    return;
+  }
+  const b = [somarBloco(pr, 0, 4), somarBloco(pr, 4, 8), somarBloco(pr, 8, HORIZONTE)];
+  if (pr.metodo === 'sem-vendas') {
+    frase.textContent = `Não houve vendas nas últimas ${a.semanas.length} semanas: a previsão é zero.`;
+  } else {
+    frase.textContent = `Nas próximas 4 semanas (${diaCurto(f[0].ini)} a ${diaCurto(f[3].fim)}), a previsão é `
+      + (p ? `vender entre ${fmt(b[0].baixo)} e ${fmt(b[0].alto)} de ${p.nome}, por volta de ${fmt(b[0].ponto)} `
+             + `(cerca de ${reais(b[0].ponto * Number(p.preco))} pelo preço atual).`
+           : `faturar entre ${fmt(b[0].baixo)} e ${fmt(b[0].alto)}, por volta de ${fmt(b[0].ponto)}.`)
+      + fraseTendencia(pr.tendencia);
+  }
+  const rotulos = ['Próximas 4 semanas', 'Semanas 5 a 8', 'Semanas 9 a 12'];
+  const limites = [[0, 3], [4, 7], [8, HORIZONTE - 1]];
+  blocos.innerHTML = b.map((x, i) => `<div class="prev-bloco"><span class="pb-rot">${rotulos[i]} · ${diaCurto(f[limites[i][0]].ini)} a ${diaCurto(f[limites[i][1]].fim)}</span>`
+    + `<strong>${esc(fmt(x.ponto))}</strong><span class="pb-faixa">faixa provável: ${esc(fmt(x.baixo))} a ${esc(fmt(x.alto))}</span></div>`).join('');
+  const conf = confianca(a.teste);
+  metodo.textContent = pr.metodo === 'sem-vendas' ? '' :
+    `Método: ${NOME_METODO[pr.metodo]} · ${a.semanas.length} semanas de histórico (vendas no app + fora do app${p ? '' : ', a de fora pelo preço atual'})`
+    + (a.teste ? ` · Teste: escondendo as últimas 4 semanas, a previsão errou ${numero(a.teste.erro * 100)}% (confiança ${conf[1].toLowerCase()})`
+      + (a.teste.metodo !== pr.metodo ? `; sem essas semanas, o teste usou ${NOME_METODO[a.teste.metodo] || a.teste.metodo}` : '') : '')
+    + ' · Faixa provável: 80% de chance de o valor real cair dentro dela, se o padrão do histórico continuar'
+    + (pr.ampliada ? ' (alargada pelo erro do teste).' : '.');
+
+  // Gráfico: até 52 semanas de histórico + as previstas
+  const mostrar = Math.min(a.semanas.length, 52);
+  const hist = a.semanas.slice(-mostrar), yHist = a.y.slice(-mostrar);
+  const titulos = [...hist.map(s => `Semana de ${diaCurto(s.ini)} a ${diaCurto(s.fim)}`),
+                   ...f.map(s => `Semana de ${diaCurto(s.ini)} a ${diaCurto(s.fim)} (previsão)`)];
+  const s = seriesPrevisao(yHist, pr, HORIZONTE);
+  if (areaGrafico('prev', 'wrap-prev', 'vazio-prev', true, '')) {
+    desenharLinhaPrevisao('prev', 'graf-prev', {
+      ...s, rotulos: [...hist, ...f].map(x => diaCurto(x.ini)), titulos, ultimo: mostrar - 1, fmt,
+      rotuloReal: p ? 'Vendido (app + fora)' : 'Receita (app + fora)',
+      eixo: p ? (v => numero(v)) : eixoMoeda,
+      aria: `Previsão de vendas${p ? ' de ' + p.nome : ''}: ${mostrar} semanas de histórico em linha contínua e as próximas ${HORIZONTE} semanas `
+          + `em linha tracejada, com a faixa provável. Próximas 4 semanas: cerca de ${fmt(b[0].ponto)}. Os valores estão na tabela abaixo do gráfico.`
+    });
+  }
+  tabela.innerHTML = hist.map((x, i) => `<tr><td>${titulos[i]}</td><td class="num">${esc(fmt(yHist[i]))}</td><td class="num">—</td><td class="num">—</td></tr>`).join('')
+    + f.map((x, j) => `<tr class="previsto"><td>${titulos[mostrar + j]}</td><td class="num">—</td><td class="num">${esc(fmt(pr.ponto[j]))}</td>`
+      + `<td class="num">${esc(fmt(pr.baixo[j]))} a ${esc(fmt(pr.alto[j]))}</td></tr>`).join('');
+}
+
+function renderPlano() {
+  const { base } = REL.calc;
+  const corpo = document.getElementById('tab-plano');
+  const ativos = PRODUTOS.filter(p => p.ativo !== false);
+  if (!ativos.length) { corpo.innerHTML = '<tr><td colspan="7">Nenhum produto ativo. Cadastre produtos em Meus Produtos.</td></tr>'; return; }
+  corpo.innerHTML = ativos.map(p => {
+    const a = analiseDoProduto(p.id), u = esc(p.unidade);
+    const perda = taxaPerda(base.diario.get(p.id), base);
+    const inicio = `<tr><td><span aria-hidden="true">${esc(p.emoji)}</span> ${esc(p.nome)}</td>`;
+    const estoque = `<td class="num">${numero(p.estoque)} ${u}</td>`;
+    const perdaTd = `<td class="num">${perda > 0 ? numero(perda * 100, 1) + '%' : '—'}</td>`;
+    if (a.p.metodo === 'insuficiente') {
+      return inicio + `<td class="num">—<small>histórico curto: ${a.semanas.length} de 4 semanas</small></td>${estoque}${perdaTd}`
+           + `<td class="num">—</td><td>—</td><td><span class="badge b-n">Sem dados</span></td></tr>`;
+    }
+    const b4 = somarBloco(a.p, 0, 4);
+    // Para entregar a previsão, é preciso colher um pouco mais: parte se perde
+    const fator = 1 / (1 - Math.min(perda, 0.9));
+    const colher = Math.max(0, Math.ceil(b4.ponto * fator - p.estoque));
+    const colherAlto = Math.max(0, Math.ceil(b4.alto * fator - p.estoque));
+    const conf = confianca(a.teste);
+    const colherTd = colher > 0
+      ? `<td class="num"><strong>${numero(colher)} ${u}</strong><small>até ${numero(colherAlto)} ${u} se a procura vier alta</small></td>`
+      : `<td class="num">Não precisa<small>${colherAlto > 0 ? `o estoque cobre; se a procura vier alta, ${numero(colherAlto)} ${u}` : 'o estoque cobre a previsão'}</small></td>`;
+    return inicio + `<td class="num">${numero(b4.ponto)} ${u}<small>${numero(b4.baixo)} a ${numero(b4.alto)} ${u}</small></td>`
+         + estoque + perdaTd + colherTd
+         + `<td>${textoTendencia(a.p.tendencia)}</td><td><span class="badge ${conf[0]}">${conf[1]}</span></td></tr>`;
+  }).join('');
+}
+
+function renderFaturamento() {
+  const { base } = REL.calc;
+  const mesAtual = base.hoje.slice(0, 7);
+  const chaves = chavesDeMeses(mesAtual, REL.meses);
+  const antes = mesDesloc(chaves[0], -1);   // para a variação do primeiro mês
+  const porMes = new Map();
+  base.diario.forEach((porDia, id) => {
+    const preco = base.precos.get(id) || 0;
+    porDia.forEach((x, dia) => {
+      const m = dia.slice(0, 7);
+      if (m < antes) return;
+      const t = porMes.get(m) || { pedidos: 0, app: 0, fora: 0 };
+      t.pedidos += x.pedidos; t.app += x.receita; t.fora += x.fora * preco;
+      porMes.set(m, t);
+    });
+  });
+  const totalDe = m => { const t = porMes.get(m); return t ? t.app + t.fora : 0; };
+  const linhas = chaves.map(m => ({ m, pedidos: 0, app: 0, fora: 0, ...(porMes.get(m) || {}), total: totalDe(m) }));
+  document.getElementById('sub-fat').textContent = `Últimos ${plural(REL.meses, 'mês', 'meses')} · * mês atual, até hoje · `
+    + 'venda fora do app (registrada na tela Estoque) estimada pelo preço atual de cada produto';
+
+  let anterior = porMes.has(antes) ? totalDe(antes) : null;
+  document.getElementById('tab-fat').innerHTML = linhas.map(l => {
+    let varTxt = '—';
+    if (l.m === mesAtual) varTxt = 'parcial';
+    else if (anterior > 0) {
+      const pct = (l.total - anterior) / anterior * 100;
+      varTxt = Math.abs(pct) < 0.5 ? 'estável' : `${pct > 0 ? '+' : '−'}${numero(Math.abs(pct))}%`;
+    }
+    anterior = l.total;
+    return `<tr><td>${rotuloMes(l.m)}${l.m === mesAtual ? ' (até hoje)' : ''}</td><td class="num">${numero(l.pedidos)}</td>`
+         + `<td class="num">${moeda(l.app)}</td><td class="num">${l.fora ? moeda(l.fora) : '—'}</td>`
+         + `<td class="num"><strong>${moeda(l.total)}</strong></td><td class="num">${varTxt}</td></tr>`;
+  }).join('');
+
+  const total = linhas.reduce((s, l) => s + l.total, 0);
+  if (!areaGrafico('fat', 'wrap-fat', 'vazio-fat', total > 0, 'Ainda não há vendas neste período.')) return;
+  const dados = {
+    labels: linhas.map(l => rotuloMes(l.m) + (l.m === mesAtual ? '*' : '')),
+    datasets: [
+      { label: 'No app', data: linhas.map(l => l.app), backgroundColor: css('--grafico'), maxBarThickness: 32, borderRadius: 0 },
+      // 2 px da cor do fundo separam as duas partes da barra; ponta de cima arredondada
+      { label: 'Fora do app (estimado)', data: linhas.map(l => l.fora), backgroundColor: css('--grafico2'), maxBarThickness: 32,
+        borderColor: css('--card'), borderWidth: { top: 0, right: 0, left: 0, bottom: 2 }, borderSkipped: false,
+        borderRadius: { topLeft: 4, topRight: 4, bottomLeft: 0, bottomRight: 0 } }
+    ]
+  };
+  const opcoes = opcoesRel(eixoMoeda, true);
+  opcoes.plugins.tooltip.callbacks = {
+    title: itens => { const l = linhas[itens[0].dataIndex]; return rotuloMes(l.m) + (l.m === mesAtual ? ' (até hoje)' : ''); },
+    label: ctx => `${ctx.dataset.label}: ${moeda(ctx.raw)}`,
+    footer: itens => `Total: ${moeda(linhas[itens[0].dataIndex].total)}`
+  };
+  const maior = linhas.reduce((x, y) => (y.total > x.total ? y : x));
+  graficoRel('fat', 'graf-fat', 'bar', dados, opcoes,
+    `Faturamento por mês, últimos ${REL.meses} meses: total de ${moeda(total)}. Maior mês: ${rotuloMes(maior.m)}, com ${moeda(maior.total)}. `
+    + 'Cada barra soma a venda no app e a de fora do app. Os valores estão na tabela abaixo do gráfico.');
+}
+
+function renderAbcPerdas() {
+  const { base, atual } = REL.calc;
+  const itens = [...atual.porProduto.entries()].map(([id, t]) => ({ id, t, info: base.nomes.get(id) || { nome: 'Produto', unidade: '' } }));
+  const nomeProd = i => { const p = PRODUTOS.find(x => x.id === i.id); return (p ? `<span aria-hidden="true">${esc(p.emoji)}</span> ` : '') + esc(i.info.nome); };
+
+  // Curva ABC: ordena pela receita e acumula. A = até 80%, B = até 95%, C = o resto.
+  const abc = itens.filter(i => i.t.total > 0).sort((a, b) => b.t.total - a.t.total);
+  const total = abc.reduce((s, i) => s + i.t.total, 0);
+  let acum = 0;
+  document.getElementById('tab-abc').innerHTML = !abc.length
+    ? '<tr><td colspan="5">Nenhuma venda neste período.</td></tr>'
+    : abc.map(i => {
+        const antes = acum / total;
+        acum += i.t.total;
+        const classe = antes < 0.8 ? ['b-g', 'A'] : antes < 0.95 ? ['b-n', 'B'] : ['b-n', 'C'];
+        return `<tr><td>${nomeProd(i)}</td><td class="num">${moeda(i.t.total)}</td><td class="num">${numero(i.t.total / total * 100, 1)}%</td>`
+             + `<td class="num">${numero(acum / total * 100, 1)}%</td><td><span class="badge ${classe[0]}">${classe[1]}</span></td></tr>`;
+      }).join('');
+
+  // Perdas: do maior prejuízo para o menor
+  const comSaida = itens.filter(i => i.t.perda > 0 || i.t.outras > 0)
+    .sort((a, b) => ((b.t.perdaR || 0) - (a.t.perdaR || 0)) || (b.t.perda - a.t.perda));
+  document.getElementById('tab-perdas').innerHTML = !comSaida.length
+    ? '<tr><td colspan="5">Nenhuma perda, doação ou consumo registrado neste período.</td></tr>'
+    : comSaida.map(i => {
+        const u = esc(i.info.unidade), t = i.t;
+        const saiu = t.app + t.fora + t.perda + t.outras;
+        return `<tr><td>${nomeProd(i)}</td><td class="num">${t.perda ? numero(t.perda) + ' ' + u : '—'}</td>`
+             + `<td class="num">${t.perdaR != null && t.perda ? moeda(t.perdaR) : '—'}</td>`
+             + `<td class="num">${saiu > 0 && t.perda ? numero(t.perda / saiu * 100, 1) + '%' : '—'}</td>`
+             + `<td class="num">${t.outras ? numero(t.outras) + ' ' + u : '—'}</td></tr>`;
+      }).join('');
+  const perdaR = atual.geral.perdaR;
+  const pior = comSaida.find(i => i.t.perdaR);
+  document.getElementById('sub-perdas').textContent = `Últimos ${plural(REL.meses, 'mês', 'meses')} · `
+    + (perdaR > 0 ? `${moeda(perdaR)} perdidos pelo preço atual` + (pior ? `; a maior perda foi em ${pior.info.nome} (${moeda(pior.t.perdaR)})` : '')
+                  : 'nenhuma perda com valor registrada')
+    + ' · % perdido = perda ÷ tudo o que saiu';
+}
+
+/* ---------- Administrador: impacto da plataforma ---------- */
+function renderRelAdmin(d) {
+  document.getElementById('aviso-rel').textContent = d.impacto.error ? traduzErro(d.impacto.error.message) : '';
+  const mesAtual = hojeISO().slice(0, 7);
+  const linhas = ((d.impacto && d.impacto.data) || []).map(r => ({
+    mes: String(r.mes).slice(0, 7), id: r.agricultor_id, nome: r.agricultor || 'Agricultor',
+    cidade: r.cidade || '', uf: r.uf || '', pedidos: Number(r.pedidos), itens: Number(r.itens), receita: Number(r.receita)
+  }));
+  const cadastrados = ((d.usuarios && d.usuarios.data) || []).filter(u => u.perfil === 'agricultor').length;
+  // Período = últimos N meses COMPLETOS; o mês atual aparece à parte, "até hoje"
+  const ultimo = mesDesloc(mesAtual, -1);
+  const chaves = chavesDeMeses(ultimo, REL.meses);
+  const anteriores = chavesDeMeses(mesDesloc(chaves[0], -1), REL.meses);
+  const atual = linhas.filter(l => chaves.includes(l.mes)), ant = linhas.filter(l => anteriores.includes(l.mes));
+  const primeiroMes = linhas.reduce((m, l) => (!m || l.mes < m ? l.mes : m), null);
+  const comparar = primeiroMes && primeiroMes <= anteriores[0];   // histórico cobre o período anterior inteiro
+  const soma = (lista, k) => lista.reduce((s, l) => s + l[k], 0);
+  const totalA = soma(atual, 'receita'), totalB = soma(ant, 'receita');
+  const agricultores = new Set(atual.map(l => l.id));
+  const municipios = new Set(atual.filter(l => l.cidade).map(l => `${l.cidade}/${l.uf}`));
+  const porMes = new Map();
+  linhas.forEach(l => {
+    const t = porMes.get(l.mes) || { receita: 0, pedidos: 0, agric: new Set() };
+    t.receita += l.receita; t.pedidos += l.pedidos; t.agric.add(l.id);
+    porMes.set(l.mes, t);
+  });
+  const medias = chaves.map(m => porMes.get(m)).filter(t => t && t.agric.size).map(t => t.receita / t.agric.size);
+  const periodoTxt = `${rotuloMes(chaves[0])} a ${rotuloMes(ultimo)}`;
+  REL.calcAdmin = { atual, periodoTxt };
+
+  definirKpi(1, '💰', `Renda gerada (${periodoTxt})`, reais(totalA), comparar
+    ? variacao(totalA, totalB, true, `vs. os ${plural(REL.meses, 'mês anterior', 'meses anteriores')}`)
+    : { texto: 'sem histórico do período anterior para comparar' }, 'r');
+  definirKpi(2, '🧑‍🌾', 'Agricultores com venda', `${numero(agricultores.size)} de ${numero(cadastrados)}`, { texto: 'cadastrados na plataforma' }, 'r');
+  definirKpi(3, '📊', 'Renda média por agricultor ativo', medias.length ? reais(medias.reduce((a, b) => a + b, 0) / medias.length) : '-', { texto: 'por mês' }, 'r');
+  definirKpi(4, '📍', 'Municípios com produtor vendendo', numero(municipios.size), null, 'r');
+
+  // Série mensal (meses completos) e previsão do mês atual e dos 2 seguintes
+  const comDados = [...porMes.keys()].filter(m => m <= ultimo).sort();
+  const hist = [];
+  if (comDados.length) for (let m = comDados[0]; m <= ultimo; m = mesDesloc(m, 1)) hist.push(m);
+  // O 1º mês com vendas quase sempre é incompleto (a plataforma começou no meio dele):
+  // ele puxaria a tendência para cima, então fica fora da série quando há meses de sobra
+  const cortouPrimeiro = hist.length > CFG_MENSAL.minimo;
+  if (cortouPrimeiro) hist.shift();
+  const futuros = [0, 1, 2].map(k => mesDesloc(mesAtual, k));
+  const y = hist.map(m => (porMes.get(m) || { receita: 0 }).receita);
+  const meses = [...hist, ...futuros].map(m => Number(m.slice(5, 7)));
+  const teste = testarPrevisao(y, meses, CFG_MENSAL, 3);
+  const p = calibrarFaixa(prever(y, 3, meses, CFG_MENSAL), teste);
+  const parcial = (porMes.get(mesAtual) || { receita: 0 }).receita;
+
+  document.getElementById('frase-adm').textContent = (totalA > 0
+    ? `De ${periodoTxt}, o AgroNexo gerou ${moeda(totalA)} de renda para ${plural(agricultores.size, 'agricultor familiar', 'agricultores familiares')}`
+      + ` em ${plural(municipios.size, 'município', 'municípios')}.`
+    : 'Ainda não há vendas confirmadas na plataforma neste período.')
+    + (p.ponto && p.metodo !== 'sem-vendas'
+      ? ` Previsão para ${rotuloMes(mesAtual)}: entre ${reais(p.baixo[0])} e ${reais(p.alto[0])} (até hoje: ${moeda(parcial)}).`
+      : hist.length ? ` A previsão aparece com ${CFG_MENSAL.minimo} meses completos de histórico (agora ${hist.length}).` : '');
+  const conf = confianca(teste);
+  document.getElementById('metodo-adm').textContent = p.ponto && p.metodo !== 'sem-vendas'
+    ? `Método: ${NOME_METODO[p.metodo]} · ${plural(hist.length, 'mês completo', 'meses completos')} de histórico`
+      + (cortouPrimeiro ? ' (o 1º mês, incompleto, fica fora)' : '')
+      + (teste ? ` · Teste: escondendo os últimos 3 meses, a previsão errou ${numero(teste.erro * 100)}% (confiança ${conf[1].toLowerCase()})` : '')
+      + ` · Faixa provável: 80% de chance${p.ampliada ? ' (alargada pelo erro do teste)' : ''}.` : '';
+
+  const titulos = [...hist.map(rotuloMes), ...futuros.map(m => `${rotuloMes(m)} (previsão${m === mesAtual ? ', mês em andamento' : ''})`)];
+  if (areaGrafico('adm', 'wrap-adm', 'vazio-adm', y.some(v => v > 0), 'O gráfico aparece quando houver um mês completo com vendas.')) {
+    desenharLinhaPrevisao('adm', 'graf-adm', {
+      ...seriesPrevisao(y, p, 3), rotulos: [...hist, ...futuros].map(rotuloMes), titulos, ultimo: hist.length - 1,
+      fmt: reais, eixo: eixoMoeda, rotuloReal: 'Renda gerada',
+      aria: `Renda gerada por mês na plataforma: ${hist.length} meses completos em linha contínua`
+          + (p.ponto ? ' e a previsão dos próximos 3 meses em linha tracejada, com a faixa provável' : '') + '. Os valores estão na tabela abaixo do gráfico.'
+    });
+  }
+  document.getElementById('tab-adm').innerHTML =
+    hist.map((m, i) => `<tr><td>${titulos[i]}</td><td class="num">${moeda(y[i])}</td><td class="num">—</td><td class="num">—</td>`
+      + `<td class="num">${numero(porMes.has(m) ? porMes.get(m).agric.size : 0)}</td></tr>`).join('')
+    + futuros.map((m, j) => `<tr class="previsto"><td>${titulos[hist.length + j]}</td>`
+      + `<td class="num">${m === mesAtual ? moeda(parcial) + ' até hoje' : '—'}</td>`
+      + `<td class="num">${p.ponto ? reais(p.ponto[j]) : '—'}</td><td class="num">${p.ponto ? reais(p.baixo[j]) + ' a ' + reais(p.alto[j]) : '—'}</td><td class="num">—</td></tr>`).join('');
+
+  // Ranking por agricultor no período
+  const porAgric = new Map();
+  atual.forEach(l => {
+    const t = porAgric.get(l.id) || { nome: l.nome, cidade: l.cidade, uf: l.uf, pedidos: 0, receita: 0 };
+    t.pedidos += l.pedidos; t.receita += l.receita;
+    porAgric.set(l.id, t);
+  });
+  const ranking = [...porAgric.values()].sort((a, b) => b.receita - a.receita);
+  document.getElementById('sub-ranking').textContent = `${periodoTxt} · ${plural(ranking.length, 'agricultor com venda', 'agricultores com venda')}`;
+  document.getElementById('tab-ranking').innerHTML = !ranking.length
+    ? '<tr><td colspan="5">Nenhuma venda confirmada neste período.</td></tr>'
+    : ranking.map(t => `<tr><td>${esc(t.nome)}</td><td>${esc(t.cidade ? `${t.cidade}/${t.uf}` : '—')}</td><td class="num">${numero(t.pedidos)}</td>`
+        + `<td class="num">${moeda(t.receita)}</td><td class="num">${totalA > 0 ? numero(t.receita / totalA * 100, 1) + '%' : '—'}</td></tr>`).join('');
+}
+
+/* ---------- Exportar ---------- */
+function baixarCsvRelatorio() {
+  const d = REL.dados, aviso = document.getElementById('aviso-rel');
+  if (!d) return;
+  if (d.admin) {
+    const c = REL.calcAdmin;
+    if (!c || !c.atual.length) { aviso.textContent = 'Não há dados para exportar neste período.'; return; }
+    const linhas = ['mes;agricultor;municipio;uf;pedidos;itens;renda_gerada'];
+    c.atual.slice().sort((a, b) => a.mes.localeCompare(b.mes) || b.receita - a.receita).forEach(l => linhas.push(
+      [l.mes, celulaCsv(l.nome), celulaCsv(l.cidade), celulaCsv(l.uf), l.pedidos, l.itens, numeroCsv(l.receita)].join(';')));
+    salvarCsv(`agronexo-impacto-${hojeISO()}-${REL.meses}meses.csv`, linhas);
+    return;
+  }
+  const c = REL.calc;
+  if (!c) return;
+  const linhas = ['mes;produto;unidade;vendido_app;receita_app;vendido_fora;receita_fora_estimada;perdido;valor_perdido_estimado;doacao_consumo'];
+  chavesDeMeses(c.base.hoje.slice(0, 7), REL.meses).forEach(m => {
+    c.base.diario.forEach((porDia, id) => {
+      const t = vazioDia();
+      porDia.forEach((x, dia) => { if (dia.startsWith(m)) for (const k in t) t[k] += x[k]; });
+      if (!t.app && !t.fora && !t.perda && !t.outras) return;
+      const info = c.base.nomes.get(id) || { nome: 'Produto', unidade: '' };
+      const preco = c.base.precos.get(id);
+      linhas.push([m, celulaCsv(info.nome), celulaCsv(info.unidade), t.app, numeroCsv(t.receita), t.fora,
+        preco != null ? numeroCsv(t.fora * preco) : '', t.perda, preco != null ? numeroCsv(t.perda * preco) : '', t.outras].join(';'));
+    });
+  });
+  if (linhas.length === 1) { aviso.textContent = 'Não há dados para exportar neste período.'; return; }
+  salvarCsv(`agronexo-relatorio-${c.base.hoje}-${REL.meses}meses.csv`, linhas);
+}
+
+function imprimirRelatorio() {
+  const agora = new Date().toLocaleString('pt-BR', { timeZone: TZ, dateStyle: 'short', timeStyle: 'short' });
+  document.getElementById('cab-impressao').textContent =
+    `AgroNexo · Relatórios de ${MEU_USUARIO ? MEU_USUARIO.nome : ''} · últimos ${plural(REL.meses, 'mês', 'meses')} · gerado em ${agora}`;
+  window.print();
+}
+// Os gráficos se ajustam à largura do papel (e voltam ao tamanho da tela depois)
+window.addEventListener('beforeprint', () => Object.values(REL.graficos).forEach(g => g.resize()));
+window.addEventListener('afterprint', () => Object.values(REL.graficos).forEach(g => g.resize()));
+
+document.getElementById('filtros-rel').addEventListener('click', (e) => {
+  const bt = e.target.closest('button[data-meses]');
+  if (!bt) return;
+  REL.meses = Number(bt.dataset.meses);
+  renderRelatorios();   // os dados já cobrem 2 anos: não precisa buscar de novo
+});
+document.getElementById('rel-produto').addEventListener('change', (e) => {
+  REL.produto = e.target.value;
+  if (REL.calc) renderPrevisaoRel();
+});
+
+/* ================================================================
    SEÇÃO 4 — ACESSIBILIDADE (fonte, alto contraste, leitura em voz alta)
 ================================================================ */
 const CHAVE_ACESS = 'agronexo-acessibilidade';
@@ -2871,6 +3850,7 @@ function aplicarPreferencias() {
   document.getElementById('bt-hc').setAttribute('aria-pressed', prefs.hc);
   try { localStorage.setItem(CHAVE_ACESS, JSON.stringify(prefs)); } catch (e) {}
   if (PAINEL.grafico) desenharGrafico(); // gráfico relê as cores e o tamanho da fonte
+  if (REL.dados) renderRelatorios();     // idem para os gráficos dos Relatórios
 }
 function mudarFonte(passo) {
   prefs.fonte = Math.min(3, Math.max(0, prefs.fonte + passo));
